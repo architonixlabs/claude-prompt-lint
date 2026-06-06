@@ -13,7 +13,11 @@ Two paths:
 from __future__ import annotations
 
 from cpl.registry import Context, Result, Skill
-from cpl.shared import rules
+from cpl.shared import model_client, rules
+
+# The rewrite generates more tokens than the gate's quick verdict, so give the
+# model a more generous budget here than the gate's tight latency timeout.
+_REWRITE_TIMEOUT_MS = 8000
 
 
 def run(ctx: Context) -> Result:
@@ -23,6 +27,35 @@ def run(ctx: Context) -> Result:
             action="message",
             payload="[cpl rewrite] Usage: /cpl rewrite <your prompt>",
         )
+
+    cfg = ctx.config or {}
+
+    # Preferred path: ask the local model for a real tightened prompt.
+    if cfg.get("use_model", False):
+        timeout = max(int(cfg.get("model_timeout_ms", 1500)), _REWRITE_TIMEOUT_MS)
+        tightened = model_client.rewrite(
+            target,
+            endpoint=cfg.get("model_endpoint"),
+            model=cfg.get("model"),
+            timeout_ms=timeout,
+        )
+        if tightened:
+            lines = [
+                "✍️  cpl rewrite",
+                "",
+                f"  Original  : {target}",
+                "",
+                "  Tightened (copy & edit any [placeholders]):",
+                "",
+            ]
+            for ln in tightened.splitlines() or [tightened]:
+                lines.append(f"    {ln}")
+            return Result(
+                action="message",
+                payload="\n".join(lines),
+                meta={"source": "model"},
+            )
+        # Model unavailable -> fall through to the rules-only scaffold.
 
     r1 = rules.evaluate(target)
 
