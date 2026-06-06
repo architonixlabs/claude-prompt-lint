@@ -13,7 +13,9 @@ The checker must never block the user because the local model misbehaved.
 from __future__ import annotations
 
 import json
+import socket
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any, Dict, Optional
 
@@ -41,6 +43,26 @@ def _build_prompt(user_prompt: str) -> str:
     )
 
 
+def _port_open(endpoint: str, timeout_s: float) -> bool:
+    """Fast pre-flight: is anything listening at the endpoint's host:port?
+
+    On Windows, a POST to a closed port triggers ~3s of TCP connect retries
+    before urlopen's read-timeout applies — so "Ollama is off" would tax every
+    inconclusive prompt. A short connect probe lets us fail open instantly
+    instead. Any uncertainty returns True so we still attempt the real call.
+    """
+    try:
+        parsed = urllib.parse.urlparse(endpoint)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        with socket.create_connection((host, port), timeout=timeout_s):
+            return True
+    except OSError:
+        return False
+    except Exception:
+        return True  # don't let a probe bug suppress a working endpoint
+
+
 def evaluate(
     user_prompt: str,
     endpoint: str,
@@ -48,6 +70,13 @@ def evaluate(
     timeout_ms: int,
 ) -> Optional[Dict[str, Any]]:
     """Call the local model. Returns a normalized dict or None (fail-open)."""
+    timeout_s = max(0.2, timeout_ms / 1000.0)
+
+    # Pre-flight connect probe (capped well under the full budget) so a closed
+    # port fails open in ~ms instead of waiting out OS connect retries.
+    if not _port_open(endpoint, timeout_s=min(0.4, timeout_s)):
+        return None
+
     body = {
         "model": model,
         "prompt": _build_prompt(user_prompt),
@@ -67,7 +96,6 @@ def evaluate(
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        timeout_s = max(0.2, timeout_ms / 1000.0)
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
     except (urllib.error.URLError, OSError, ValueError, TimeoutError):
@@ -101,10 +129,32 @@ def _parse(raw: str) -> Optional[Dict[str, Any]]:
 
 
 def _normalize(v: Dict[str, Any]) -> Dict[str, Any]:
-    """Coerce the model's verdict into the strict contract shape."""
+    """Coerce the model's verdict into the strict contract shape.
+
+    Small models drift from the contract — e.g. returning issues as a list of
+    objects ({"message": ..., "severity": ...}) instead of strings. We extract
+    the human-readable text from common key names rather than stringifying the
+    whole dict.
+    """
+    def _item_text(i: Any) -> str:
+        if isinstance(i, str):
+            return i.strip()
+        if isinstance(i, dict):
+            for key in ("message", "text", "issue", "suggestion", "detail",
+                        "description", "msg"):
+                val = i.get(key)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+            # No known key — fall back to the first string value present.
+            for val in i.values():
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+            return ""
+        return str(i).strip()
+
     def _str_list(x: Any) -> list:
         if isinstance(x, list):
-            return [str(i).strip() for i in x if str(i).strip()][:3]
+            return [t for t in (_item_text(i) for i in x) if t][:3]
         if isinstance(x, str) and x.strip():
             return [x.strip()]
         return []

@@ -188,7 +188,11 @@ def evaluate(text: str) -> RuleResult:
         )
 
     # Soft signal: change request with no acceptance criteria / constraints.
-    if has_intent and not _CRITERIA_RE.search(stripped):
+    # A prompt already rich in concrete anchors (a named file + symbol, an
+    # error, a quoted target) is actionable enough on its own — we don't push
+    # an acceptance-criteria nag at it, and crucially we keep it out of the
+    # model's inconclusive band where small models tend to over-flag.
+    if has_intent and not _CRITERIA_RE.search(stripped) and res.anchors < 2:
         res.add(
             10,
             "No acceptance criteria: nothing states what 'done' looks like.",

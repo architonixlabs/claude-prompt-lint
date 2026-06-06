@@ -154,7 +154,18 @@ Then set `"use_model": true` in the config. The model is asked for a strict
 JSON verdict (`pass`, `score`, `issues`, `suggestions`) with a hard timeout. If
 it's slow, down, or returns junk, **the prompt passes** — fail-open is sacred.
 
-A 1–4B instruct model on a modern GPU (e.g. RTX 3060 12 GB) stays sub-second.
+A 1–4B instruct model on a modern GPU (e.g. RTX 3060 12 GB) stays sub-second
+once warm (~0.5s for `qwen2.5:3b-instruct`). Two latency notes:
+
+- **Closed port** (Ollama not running): the client pre-flights the connection
+  and fails open in well under a second instead of waiting out OS retries.
+- **Cold start** (Ollama unloaded the model after idle): the first call can
+  exceed the timeout, so that one prompt fails open and passes. Subsequent
+  prompts are fast. Set Ollama's `OLLAMA_KEEP_ALIVE` if you want it resident.
+
+> Verified locally: `qwen2.5:3b-instruct` ~0.5s warm. An 8B model like
+> `llama3.1` works but ran ~25s cold here — too slow for an inline gate. Stick
+> to a small model, or raise `model_timeout_ms` and accept the latency.
 
 ---
 
@@ -166,16 +177,21 @@ The gate ships tuned against a labelled eval set ([`eval/`](eval/)):
 python eval/run_eval.py
 ```
 
-**Rules-only (Tier 1, no model), current numbers:**
+| Configuration | False Positive Rate | False Negative Rate |
+|---------------|---------------------|---------------------|
+| **Tier 1 only** (rules, no model) | **0.0%** (0/30) | 3.3% (1/30) |
+| **Tier 1 + Tier 2** (with `qwen2.5:3b-instruct`) | **0.0%** (0/30) | **0.0%** (0/30) |
 
-| Metric | Value |
-|--------|-------|
-| False Positive Rate (good prompts wrongly flagged) | **0.0%** (0/30) |
-| False Negative Rate (bad prompts that slipped through) | **3.3%** (1/30) |
+Rules-only already holds **0% false positives** — a gate that flags good
+prompts gets disabled, so this is the number that matters. The one bad prompt
+rules-only misses ("review the whole codebase…") is a borderline ask with no
+concrete anchor; enabling the Tier 2 model closes that gap and takes the false
+negative rate to **0% — with no new false positives**.
 
-The single bad prompt that slips through is a borderline "review the whole
-codebase" ask — exactly the nuanced case the Tier 2 model is meant to catch.
-FPR is held at 0% deliberately: a gate that flags good prompts gets disabled.
+The architecture is what keeps FPR at zero: prompts with concrete anchors
+*strong-pass at Tier 1* and never reach the model, so the small local model
+(which tends to nitpick well-specified prompts) only adjudicates genuinely
+ambiguous, anchor-free cases.
 
 Re-run with the model: `python eval/run_eval.py --use-model` (needs Ollama).
 

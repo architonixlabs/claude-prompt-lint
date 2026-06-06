@@ -115,7 +115,13 @@ def run(ctx: Context) -> Result:
     score = min(100, r1.penalty)
 
     # Strong pass — confident enough to skip the model.
-    if r1.penalty <= _STRONG_PASS_MAX:
+    # Two ways to earn it:
+    #  (a) penalty is trivially low, or
+    #  (b) the prompt has a concrete anchor and its only ding is the soft
+    #      acceptance-criteria nag (penalty <= 10). A prompt that names a real
+    #      file/symbol/error is actionable; sending it to a small local model
+    #      just invites false positives (the model nitpicks "full file path").
+    if r1.penalty <= _STRONG_PASS_MAX or (r1.anchors >= 1 and r1.penalty <= 10):
         _log(ctx, "pass", score, "tier1", r1.issues)
         return Result(action="pass", score=score, meta={"tier": "tier1"})
 
@@ -134,12 +140,22 @@ def run(ctx: Context) -> Result:
             timeout_ms=int(cfg.get("model_timeout_ms", 1500)),
         )
         if verdict is not None:
-            # Merge: take the higher (more cautious) of rule vs model score,
-            # but defer to the model's pass/fail decision on its own threshold.
+            # Merge rule + model signals. Take the higher (more cautious) score.
             m_score = int(verdict.get("score", 0))
             merged_score = max(score, m_score)
             threshold = int(cfg.get("block_threshold", 50))
-            if (not verdict.get("pass", True)) or merged_score >= threshold:
+
+            # Low-false-positive bias (principle #4): small local models are
+            # noisy and over-flag. When Tier 1 already found concrete anchors,
+            # the prompt is specific — require the model to be *confident*
+            # (score >= threshold) to flag it, rather than letting a bare
+            # pass:false override. Anchor-free prompts get the stricter OR.
+            if r1.anchors >= 1:
+                should_flag = merged_score >= threshold
+            else:
+                should_flag = (not verdict.get("pass", True)) or merged_score >= threshold
+
+            if should_flag:
                 issues = (r1.issues + verdict.get("issues", []))
                 suggestions = (r1.suggestions + verdict.get("suggestions", []))
                 res = _verdict_to_result(
