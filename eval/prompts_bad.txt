@@ -1,0 +1,35 @@
+# Bad prompts — vague, under-specified. These should be FLAGGED by the gate.
+# One prompt per line. Blank lines and #-comments are ignored.
+# Note: prompts under min_length_skip (40 chars) are intentionally skipped by
+# Tier 0, so the bad examples here are long enough to actually be evaluated.
+
+can you please just go ahead and fix it and make this whole thing better for me
+i think there is some kind of bug somewhere in the code, please find it and fix it
+make the app faster, it feels really slow lately and i dont know why
+clean up this code and make it more professional looking and modern please
+improve the performance of everything and optimize it as much as you possibly can
+something is broken with the login, just make it work like it used to before
+refactor all of this so that it is cleaner and follows best practices everywhere
+the styling looks bad on the page, can you make it look nicer and more polished
+fix the thing that is not working right now, you know the one i mean from before
+optimize this and make it production ready and also handle all the edge cases too
+just make it good, i trust you, do whatever you think is best for the whole thing
+the tests are failing somewhere, please go through and fix all of them for me
+update everything to the latest version and make sure nothing breaks anywhere ok
+this feature is not behaving correctly, please look into it and sort it all out
+do a full review and improve whatever needs improving across the entire codebase
+make this more efficient and also more readable and also more maintainable please
+there are some issues with the deployment, can you just handle all of that stuff
+rewrite this to be better, faster, and cleaner, you understand what i want right
+the ui is kind of clunky, please redo it so it feels smooth and nice to use now
+fix all the bugs and also add whatever features you think would be good to have
+clean up the whole project and remove anything that looks unnecessary or messy
+make the database stuff better, it is kind of a mess right now honestly i think
+go ahead and modernize this old code so it uses all the new patterns and things
+something feels off about the architecture, please improve it however you see fit
+just polish everything up and make it feel really professional and high quality
+the performance is terrible, please optimize all of it and make it super fast now
+handle the errors better throughout the app, right now it is not great at all
+improve the overall code quality and make it nicer to work with going forward ok
+fix whatever is wrong with this, i am not totally sure what but you will know it
+make it all work properly and look good and be fast, basically just make it great

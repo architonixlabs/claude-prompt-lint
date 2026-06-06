@@ -427,3 +427,42 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# ============================================================
+# claude-prompt-lint specific
+# ============================================================
+
+# --- vscode AI rules ---
+.github/instructions/codacy.instructions.md
+.github\instructions\codacy.instructions.md
+
+# --- cpl local state (never commit user prompt logs) ---
+.cpl/
+*.log.jsonl
+cpl-debug.log
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- session scratch ---
+.remember/logs/
+google.geminicodeassist.*.log

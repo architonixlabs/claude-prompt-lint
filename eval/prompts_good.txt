@@ -1,0 +1,33 @@
+# Good prompts — specific, actionable. These should PASS the gate.
+# One prompt per line. Blank lines and #-comments are ignored.
+
+In auth.py, parseToken() throws KeyError when the JWT has no exp claim. Add a guard that returns None instead, and a test in test_auth.py for the missing-exp case.
+Refactor the retry loop in http_client.py:send() to use exponential backoff with a max of 5 attempts; keep the existing timeout behavior.
+The /api/users endpoint returns 500 when the page query param is non-numeric. Make it return 400 with a clear message instead.
+Add a --dry-run flag to deploy.sh that prints the commands it would run without executing them.
+Convert the callback-based readConfig() in config.js to return a Promise; update its two callers in app.js accordingly.
+Write a unit test for calculate_tax() covering the zero-income, negative-income, and over-bracket-threshold cases.
+The Dockerfile installs dependencies before copying source, so the cache busts on every change. Reorder so npm install is cached.
+In dashboard.tsx the revenue chart re-renders on every keystroke in the search box. Memoize it so it only updates when `data` changes.
+Add input validation to the signup form: reject emails without an @, and passwords shorter than 8 characters, showing inline errors.
+Migrate the users table from MySQL to Postgres: generate the CREATE TABLE DDL preserving the unique index on email.
+parseDate() in utils.py fails on ISO strings with a trailing Z. Fix it and add a regression test.
+The build fails with "Module not found: lodash/debounce". Add the missing dependency and pin it in package.json.
+Optimize the N+1 query in OrderRepository.findAll() by eager-loading the line_items association.
+Add a GitHub Actions workflow that runs pytest on push to main and fails the job if coverage drops below 80%.
+Rename the variable `tmp` in process_batch() to something descriptive; it holds the deduplicated record set.
+The CSV export in report.py drops rows where the amount is exactly 0. Include them; only skip rows where amount is null.
+Add a rate limiter to the /login route: max 5 attempts per IP per minute, returning 429 when exceeded.
+In styles.css the mobile nav overlaps the header below 480px. Fix the z-index so the nav sits on top.
+Implement a binary search in search.go that returns the index of `target` in a sorted []int, or -1 if absent.
+The webhook handler in webhooks.py crashes on empty payloads. Return a 400 for empty bodies before parsing JSON.
+Cache the result of get_exchange_rates() for 15 minutes; it currently hits the API on every request.
+Add type hints to every function in models.py and make it pass `mypy --strict`.
+The logout button in Navbar.jsx doesn't clear the auth cookie. Clear it and redirect to /login.
+Split the 400-line handler in views.py:checkout() into validate, charge, and confirm helper functions.
+Fix the off-by-one in paginate(): the last page currently shows one extra item from the next page.
+Add a healthcheck endpoint at /healthz that returns 200 and the git commit SHA from the GIT_SHA env var.
+The regex in validate_phone() rejects valid +country-code numbers. Update it to accept an optional leading + and 7-15 digits.
+Replace the hardcoded API key in client.py:18 with a read from the API_KEY environment variable.
+In the Kubernetes deployment.yaml, set memory limits to 512Mi and requests to 256Mi for the web container.
+Add a confirmation dialog to the delete-account button in settings.tsx before calling the delete API.

@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "mode": "warn",
+  "bypass_prefix": "!!",
+  "min_length_skip": 40,
+  "block_threshold": 50,
+  "use_model": false,
+  "model": "qwen2.5:3b-instruct",
+  "model_endpoint": "http://localhost:11434/api/generate",
+  "model_timeout_ms": 1500,
+  "fail_open": true,
+  "log_path": "~/.cpl/prompts.log.jsonl",
+  "debug_log": false,
+  "skills": {
+    "gate": true,
+    "rewrite": true,
+    "stats": true,
+    "explain": true,
+    "profile": false,
+    "expand": false,
+    "scope": false,
+    "template": false
+  }
+}

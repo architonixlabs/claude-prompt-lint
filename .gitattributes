@@ -1,0 +1,13 @@
+# Normalize line endings. Text files are LF in the repo.
+* text=auto eol=lf
+
+# Shell scripts MUST stay LF (CRLF breaks the shebang on POSIX).
+*.sh text eol=lf
+
+# PowerShell scripts are CRLF on checkout (Windows-native).
+*.ps1 text eol=crlf
+
+# Keep binary-ish assets untouched.
+*.png binary
+*.jpg binary
+*.gif binary
