@@ -1,7 +1,7 @@
 ---
 description: Lint your prompt before you spend the token — run a cpl skill (rewrite, stats, explain, …).
 argument-hint: <skill> [args]   e.g. rewrite fix the login bug
-allowed-tools: Bash(python:*)
+allowed-tools: Bash(python3:*), Bash(python:*)
 ---
 
 # /cpl — claude-prompt-lint
@@ -12,7 +12,7 @@ rest is passed to it as arguments.
 Run the dispatcher in command mode and relay its output to the user verbatim:
 
 ```
-!python "${CLAUDE_PLUGIN_ROOT}/hooks/dispatcher.py" --command $ARGUMENTS
+!python3 "${CLAUDE_PLUGIN_ROOT}/hooks/dispatcher.py" --command $ARGUMENTS
 ```
 
 ## Available skills (v1)

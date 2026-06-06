@@ -8,7 +8,7 @@ Write-Host "claude-prompt-lint - install check"
 Write-Host "  repo: $Root"
 
 $Py = $null
-foreach ($cand in @("python", "python3", "py")) {
+foreach ($cand in @("python3", "python", "py")) {
     $cmd = Get-Command $cand -ErrorAction SilentlyContinue
     if ($cmd) { $Py = $cmd.Source; break }
 }

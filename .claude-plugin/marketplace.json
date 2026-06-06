@@ -1,0 +1,38 @@
+{
+  "name": "architonix-labs",
+  "owner": {
+    "name": "Ram Chandra Samal",
+    "email": "rcsamal@gmail.com",
+    "url": "https://architonix.com"
+  },
+  "metadata": {
+    "description": "Architonix Labs plugins for Claude Code.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "claude-prompt-lint",
+      "source": "./",
+      "description": "Lint your prompt before you spend the token. A local-first prompt-quality gate that flags weak prompts pre-send using fast local rules and an optional local model — zero API tokens spent on the check.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Ram Chandra Samal",
+        "email": "rcsamal@gmail.com",
+        "url": "https://architonix.com"
+      },
+      "homepage": "https://github.com/architonixlabs/claude-prompt-lint",
+      "repository": "https://github.com/architonixlabs/claude-prompt-lint",
+      "license": "MIT",
+      "keywords": [
+        "prompt",
+        "lint",
+        "quality",
+        "gate",
+        "local-first",
+        "ollama",
+        "hooks"
+      ],
+      "strict": false
+    }
+  ]
+}

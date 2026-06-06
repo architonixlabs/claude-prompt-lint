@@ -97,7 +97,11 @@ def handle_hook(event: str, cfg) -> int:
     from cpl.registry import Context, Registry
 
     payload = _read_stdin_json()
-    prompt = payload.get("prompt", "")
+    # Field name has varied across Claude Code versions: "prompt" vs
+    # "user_prompt". Accept either so the gate keeps working on upgrade.
+    prompt = payload.get("prompt")
+    if prompt is None:
+        prompt = payload.get("user_prompt", "")
     if not isinstance(prompt, str):
         prompt = str(prompt or "")
 

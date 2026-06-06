@@ -48,8 +48,10 @@ runs for the genuinely ambiguous middle.
 
 ## Install
 
-> **Requirements:** Python 3.8+ on your `PATH`. No pip packages — the plugin
-> uses only the Python standard library.
+> **Requirements:** Python 3 available as `python3` on your `PATH` (the hook
+> invokes `python3`; modern Windows, macOS, and Linux all provide it). No pip
+> packages — the plugin uses only the standard library. Developed and verified
+> on CPython 3.14; it uses only 3.7-era features, but 3.7–3.13 are untested.
 
 ### 1. Get the code
 
@@ -63,10 +65,16 @@ cd claude-prompt-lint
 
 ### 2. Register it as a Claude Code plugin
 
-Add this repo as a plugin (via your plugin marketplace config, or a local
-plugin path). Claude Code discovers `commands/` and `hooks/hooks.json`
-automatically, and sets `${CLAUDE_PLUGIN_ROOT}` so the hook can find the
-dispatcher.
+This repo ships a marketplace manifest, so the quickest path is:
+
+```
+/plugin marketplace add architonixlabs/claude-prompt-lint
+/plugin install claude-prompt-lint@architonix-labs
+```
+
+Or add it as a local plugin path. Either way, Claude Code discovers
+`commands/` and `hooks/hooks.json` automatically and sets
+`${CLAUDE_PLUGIN_ROOT}` so the hook can find the dispatcher.
 
 > ⚠️ **Version pin.** Claude Code's `UserPromptSubmit` hook output contract has
 > shifted across versions. This plugin is verified against the behavior
