@@ -33,19 +33,37 @@ def _repo_root(ctx: Context) -> Path:
     return Path(ctx.cwd or os.getcwd())
 
 
-def _find_file(root: Path, ref: str) -> str:
-    """Return a match note for a referenced file: exact, basename, or missing."""
-    ref_norm = ref.replace("\\", "/")
-    candidate = (root / ref_norm)
-    if candidate.is_file():
-        return f"✓ {ref} — found"
-    # Try matching by basename anywhere in the tree.
-    base = os.path.basename(ref_norm)
+def _build_basename_index(root: Path):
+    """Walk the repo ONCE, mapping basename -> first relative path seen.
+
+    Capped at _MAX_FILES_SCAN so a huge monorepo can't make /cpl scope hang.
+    Returns (index, capped) where `capped` signals the walk was truncated.
+    """
+    index = {}
+    count = 0
+    capped = False
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
-        if base in filenames:
-            rel = os.path.relpath(os.path.join(dirpath, base), root)
-            return f"~ {ref} — not at that path, but `{rel}` exists"
+        for fn in filenames:
+            if count >= _MAX_FILES_SCAN:
+                capped = True
+                return index, capped
+            count += 1
+            if fn not in index:
+                index[fn] = os.path.relpath(os.path.join(dirpath, fn), root)
+    return index, capped
+
+
+def _find_file(root: Path, ref: str, index, capped: bool) -> str:
+    """Classify a referenced file against the pre-built basename index."""
+    ref_norm = ref.replace("\\", "/")
+    if (root / ref_norm).is_file():
+        return f"✓ {ref} — found"
+    base = os.path.basename(ref_norm)
+    if base in index:
+        return f"~ {ref} — not at that path, but `{index[base]}` exists"
+    if capped:
+        return f"? {ref} — not found in the first {_MAX_FILES_SCAN} files (repo too large to fully scan)"
     return f"✗ {ref} — no such file in repo"
 
 
@@ -65,19 +83,29 @@ def _iter_source_files(root: Path):
                 yield Path(dirpath) / fn
 
 
-def _symbol_present(root: Path, symbol: str) -> bool:
-    needle = symbol.replace("()", "")
-    if not needle:
-        return False
+def _symbols_present(root: Path, symbols):
+    """Check many symbols in ONE pass over the source tree.
+
+    Returns a set of the symbols found. Reading each file once and testing all
+    needles avoids re-walking the repo per symbol (which was up to 8x the work).
+    Short-circuits as soon as every symbol is located.
+    """
+    needles = {s: s.replace("()", "") for s in symbols if s.replace("()", "")}
+    found = set()
+    if not needles:
+        return found
     for f in _iter_source_files(root):
+        if len(found) == len(needles):
+            break
         try:
             with f.open("r", encoding="utf-8", errors="ignore") as fh:
-                for line in fh:
-                    if needle in line:
-                        return True
+                content = fh.read()
         except Exception:
             continue
-    return False
+        for sym, needle in needles.items():
+            if sym not in found and needle in content:
+                found.add(sym)
+    return found
 
 
 def run(ctx: Context) -> Result:
@@ -119,24 +147,31 @@ def run(ctx: Context) -> Result:
 
     lines = ["🔎 cpl scope", "", f"  Repo: {root}", ""]
 
+    # Walk the tree once; reuse the index for every file lookup below.
+    file_results = {}
     if files:
+        index, capped = _build_basename_index(root)
+        for ref in files[:15]:
+            file_results[ref] = _find_file(root, ref, index, capped)
         lines.append("  Files referenced:")
         for ref in files[:15]:
-            lines.append(f"    {_find_file(root, ref)}")
+            lines.append(f"    {file_results[ref]}")
         lines.append("")
 
-    # Symbol scan is the expensive part — cap how many we check.
+    # Symbol scan is the expensive part — cap how many we check, and resolve
+    # them all in a single pass over the source tree.
     if symbols:
+        checked = symbols[:8]
+        found = _symbols_present(root, checked)
         lines.append("  Symbols referenced (searched in tracked source):")
-        for sym in symbols[:8]:
-            present = _symbol_present(root, sym)
-            mark = "✓" if present else "✗"
-            note = "found" if present else "not found in repo"
+        for sym in checked:
+            mark = "✓" if sym in found else "✗"
+            note = "found" if sym in found else "not found in repo"
             lines.append(f"    {mark} {sym} — {note}")
         if len(symbols) > 8:
             lines.append(f"    … and {len(symbols) - 8} more not checked (cap)")
 
-    missing = [f for f in files if _find_file(root, f).startswith("✗")]
+    missing = [ref for ref, note in file_results.items() if note.startswith("✗")]
     if missing:
         lines += [
             "",

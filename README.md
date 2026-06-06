@@ -132,22 +132,41 @@ Edit [`config/cpl.config.json`](config/cpl.config.json). You can also drop a
   "model_timeout_ms": 1500,
   "fail_open": true,
   "log_path": "~/.cpl/prompts.log.jsonl",
-  "skills": { "gate": true, "rewrite": true, "stats": true, "explain": true }
+  "debug_log": false,
+  "skills": {
+    "gate": true, "rewrite": true, "stats": true, "explain": true,
+    "profile": true, "expand": true, "scope": true, "template": true
+  }
 }
 ```
 
-| Key | Meaning |
-|-----|---------|
-| `mode` | `warn` (inject a note, let it proceed) or `block` (erase + show feedback). |
-| `bypass_prefix` | Prefix that skips the gate entirely. Default `!!`. |
-| `min_length_skip` | Prompts shorter than this many chars are never gated. |
-| `use_model` | Turn on the Tier 2 local model (needs Ollama — see below). |
-| `fail_open` | **Sacred.** Model down ⇒ prompt passes. Keep this `true`. |
-| `log_path` | Local JSONL prompt log. `~` and env vars are expanded. |
-| `skills` | Enable/disable individual skills. |
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `enabled` | `true` | Master switch. Set `false` to turn cpl off entirely without uninstalling. |
+| `mode` | `warn` | `warn` (inject a note, let it proceed) or `block` (erase + show feedback). |
+| `bypass_prefix` | `!!` | Prefix that skips the gate for a single prompt. |
+| `min_length_skip` | `40` | Prompts shorter than this many chars are never gated. |
+| `block_threshold` | `50` | Tier 2 score (0–100) at or above which the model's verdict flags a prompt. |
+| `use_model` | `false` | Turn on the Tier 2 local model (needs Ollama — see below). |
+| `model` | `qwen2.5:3b-instruct` | Ollama model name for Tier 2. |
+| `model_endpoint` | `http://localhost:11434/api/generate` | Ollama generate endpoint. |
+| `model_timeout_ms` | `1500` | Hard timeout for the Tier 2 call. Exceeded ⇒ fail-open (passes). |
+| `fail_open` | `true` | **Sacred.** Model down/slow ⇒ prompt passes. Keep this `true`. |
+| `log_path` | `~/.cpl/prompts.log.jsonl` | Local JSONL prompt log. `~` and env vars are expanded. |
+| `debug_log` | `false` | When `true`, writes hook/skill errors to `cpl-debug.log` next to the log for troubleshooting. |
+| `skills` | all on | Enable/disable individual skills by name. |
 
 **Default mode is `warn`** — lenient on purpose. Flip to `block` once you trust
 the gate.
+
+### Turning it off
+
+- **For one prompt:** prefix it with `!!` (the `bypass_prefix`).
+- **The whole gate, temporarily:** set `"mode": "warn"` (default) so it never
+  erases prompts — it only adds a note.
+- **Everything:** set `"enabled": false`. cpl stops doing anything; `/cpl`
+  commands still work.
+- **One skill:** set its entry under `"skills"` to `false`.
 
 ---
 
@@ -237,8 +256,22 @@ templates/              prompt templates (bugfix / refactor / migration)
 
 - **Windows:** paths are handled cross-platform; the hook forces UTF-8 stdout
   so feedback renders on `cp1252` consoles. PowerShell installer included.
-- **Privacy:** the prompt log is local JSONL under `~/.cpl/`. It never leaves
-  your machine and is `.gitignore`d.
+- **Privacy & the log:** the gate appends one record per evaluated prompt to a
+  local JSONL file (default `~/.cpl/prompts.log.jsonl`). It stores metadata —
+  action, score, tier, prompt length, and stable issue-category tags — **not
+  your prompt text**. It never leaves your machine and is `.gitignore`d.
+  - **Clear it:** delete the file (`rm ~/.cpl/prompts.log.jsonl`, or on Windows
+    `del %USERPROFILE%\.cpl\prompts.log.jsonl`). `stats` and `profile` simply
+    start fresh.
+  - **Disable logging:** set `log_path` to a throwaway path, or `"stats": false`
+    and `"profile": false` if you don't use those skills. (The gate still logs
+    for its own counters; deleting the file anytime is the simplest reset.)
+  - Uninstalling the plugin does **not** remove `~/.cpl/` — delete it manually
+    if you want it gone.
+- **Model variance:** with the Tier 2 model on, a small local model is mildly
+  non-deterministic on genuinely borderline prompts, so the false-negative rate
+  hovers near (not exactly) 0%. Fail-open guarantees this only ever lets a weak
+  prompt through, never blocks a good one.
 - **Not** an auto-rewriter that silently sends your prompt, a code/security
   scanner, or a cloud-API evaluator. Scope is *prompt quality, before send*.
 

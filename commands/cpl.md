@@ -15,17 +15,21 @@ Run the dispatcher in command mode and relay its output to the user verbatim:
 !python3 "${CLAUDE_PLUGIN_ROOT}/hooks/dispatcher.py" --command $ARGUMENTS
 ```
 
-## Available skills (v1)
+## Available skills
 
 | Command | What it does |
 |---------|--------------|
 | `/cpl rewrite <prompt>` | Returns a tightened version of your prompt to copy. |
+| `/cpl expand <prompt>` | Scaffolds a terse prompt into Task / Anchor / Constraints / Done-when. |
 | `/cpl explain <prompt>` | Detailed breakdown of what's weak and why. |
+| `/cpl scope <prompt>` | Checks that referenced files/symbols exist in the repo. |
+| `/cpl profile` | Your recurring prompt weaknesses over time (local log). |
 | `/cpl stats` | Gated/passed counts + estimated tokens saved from your local log. |
+| `/cpl template <name>` | Emits a reusable prompt template (`bugfix`, `refactor`, `migration`). |
 | `/cpl help` | List available commands. |
 
-Differentiator skills (`profile`, `expand`, `scope`, `template`) ship disabled
-and land in v1.x — enable them in `config/cpl.config.json`.
+All eight skills are enabled by default; toggle any of them under `"skills"` in
+`config/cpl.config.json`.
 
 ## Behaviour notes
 

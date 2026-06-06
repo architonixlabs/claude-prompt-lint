@@ -4,6 +4,37 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] — 2026-06-06
+
+Hardening pass from a cross-validation audit (user, AI-agent, and code-review
+perspectives). No behavior changes to the gate's verdicts.
+
+### Fixed
+- **`scope` could hang on large repos.** It re-walked the whole tree once per
+  referenced file (twice, actually) and per symbol, with no file cap on the
+  file lookup. Now it walks the tree once into a basename index, batches all
+  symbol lookups into a single pass, and respects the scan cap everywhere —
+  reporting `?` when a repo is too large to fully scan.
+- **Rewrite/expand output could be mangled.** The output cleaner used
+  `str.strip("<<<")`, which strips a *set of characters*, so it chewed through
+  angle brackets inside the content (e.g. `<auth.py>`). Now removes each marker
+  as a whole prefix/suffix.
+- **Dispatcher now flushes stdout** on every emit path, so a clean exit can
+  never leave a partially-buffered (unparseable) block payload.
+- **`model_client` catches `http.client.HTTPException`** explicitly (truncated
+  responses from a crashing Ollama) instead of relying on the catch-all.
+
+### Documentation
+- Config table now documents every key (`enabled`, `block_threshold`, `model`,
+  `model_endpoint`, `model_timeout_ms`, `debug_log`).
+- Added an explicit **"Turning it off"** section (bypass / warn / disable / per
+  skill) and a **Privacy & the log** section (what's logged — metadata, not
+  prompt text — and how to clear it).
+- `/cpl help` now shows live status (enabled, mode, model tier), the bypass
+  prefix, the off-switch, all commands, and examples.
+- Fixed a stale note in the `/cpl` command doc that said the v1.1 skills ship
+  disabled (they're enabled by default).
+
 ## [1.1.0] — 2026-06-06
 
 Ships the four differentiator skills that were stubbed in 1.0, all enabled by

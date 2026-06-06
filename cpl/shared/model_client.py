@@ -12,6 +12,7 @@ The checker must never block the user because the local model misbehaved.
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import socket
@@ -91,7 +92,10 @@ def _call(
         )
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:
             return resp.read().decode("utf-8", errors="replace")
-    except (urllib.error.URLError, OSError, ValueError, TimeoutError):
+    except (urllib.error.URLError, OSError, ValueError, TimeoutError,
+            http.client.HTTPException):
+        # http.client.HTTPException covers truncated/garbled responses from a
+        # crashing Ollama (IncompleteRead, BadStatusLine) that aren't OSError.
         return None
     except Exception:
         return None
@@ -184,8 +188,21 @@ def _clean_rewrite(text: str) -> Optional[str]:
     """Strip artifacts small models tend to echo: delimiters, labels, quotes."""
     text = text.strip()
     # Drop leading/trailing fences and our own <<< >>> delimiters if echoed.
-    for marker in ("<<<", ">>>", "<<", ">>", "```"):
-        text = text.strip().strip(marker).strip()
+    # NOTE: str.strip(marker) treats the arg as a *char set*, so it would chew
+    # through angle brackets inside the content (e.g. "<auth.py>"). Remove each
+    # marker as a whole prefix/suffix instead.
+    for marker in ("```", "<<<", ">>>", "<<", ">>"):
+        changed = True
+        while changed:
+            changed = False
+            t = text.strip()
+            if t.startswith(marker):
+                t = t[len(marker):]
+                changed = True
+            if t.endswith(marker):
+                t = t[: -len(marker)]
+                changed = True
+            text = t.strip()
     # Drop a leading "REWRITTEN PROMPT:" / "Rewritten:" style label.
     lowered = text.lower()
     for label in ("rewritten prompt:", "rewritten:", "prompt:", "here is the rewritten prompt:"):

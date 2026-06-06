@@ -76,21 +76,29 @@ def _emit_pass() -> int:
     return 0
 
 
-def _emit_block(reason: str) -> int:
-    sys.stdout.write(json.dumps({"decision": "block", "reason": reason}))
+def _write(text: str) -> int:
+    # Single point that writes stdout and flushes, so a clean exit can never
+    # leave a partially-buffered (and unparseable) block/JSON payload.
+    sys.stdout.write(text)
+    try:
+        sys.stdout.flush()
+    except Exception:
+        pass
     return 0
+
+
+def _emit_block(reason: str) -> int:
+    return _write(json.dumps({"decision": "block", "reason": reason}))
 
 
 def _emit_inject(text: str) -> int:
     # Plain text on stdout is appended to context.
-    sys.stdout.write(text)
-    return 0
+    return _write(text)
 
 
 def _emit_message(text: str) -> int:
     # Command output -> shown to the user.
-    sys.stdout.write(text)
-    return 0
+    return _write(text)
 
 
 def handle_hook(event: str, cfg) -> int:
@@ -154,10 +162,29 @@ def handle_command(command: str, args: str, cfg) -> int:
 
     if not command or command in ("help", "--help", "-h"):
         cmds = ", ".join(registry.commands()) or "(none enabled)"
+        enabled = cfg.get("enabled", True)
+        mode = cfg.get("mode", "warn")
+        bypass = cfg.get("bypass_prefix", "!!")
+        model = "on" if cfg.get("use_model", False) else "off"
         return _emit_message(
             "cpl — lint your prompt before you spend the token.\n"
-            f"Commands: {cmds}\n"
-            "Usage: /cpl <command> [args]"
+            "\n"
+            "The gate checks each prompt locally (no API tokens) and flags weak\n"
+            "ones before you send. Most prompts pass instantly.\n"
+            "\n"
+            f"  Status   : gate {'enabled' if enabled else 'DISABLED'}, "
+            f"mode={mode}, model tier {model}\n"
+            f"  Bypass   : start a prompt with `{bypass}` to skip the gate once\n"
+            f"  Off      : set \"enabled\": false in config/cpl.config.json\n"
+            "\n"
+            f"  Commands : {cmds}\n"
+            "  Usage    : /cpl <command> [args]\n"
+            "\n"
+            "  e.g.  /cpl explain make the dashboard better\n"
+            "        /cpl rewrite fix the login bug\n"
+            "        /cpl stats        /cpl profile\n"
+            "\n"
+            "Full docs: https://github.com/architonixlabs/claude-prompt-lint"
         )
 
     skill = registry.for_command(command)
