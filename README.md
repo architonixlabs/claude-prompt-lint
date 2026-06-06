@@ -103,9 +103,13 @@ Just type. Weak prompts get flagged. To bypass on purpose, prefix with `!!`:
 
 | Command | What it does |
 |---------|--------------|
-| `/cpl rewrite <prompt>` | Returns a tightened skeleton of your prompt to copy. |
+| `/cpl rewrite <prompt>` | Returns a tightened version of your prompt to copy. |
+| `/cpl expand <prompt>` | Scaffolds a terse prompt into Task / Anchor / Constraints / Done-when. |
 | `/cpl explain <prompt>` | Detailed breakdown of what's weak and why. |
+| `/cpl scope <prompt>` | Checks that referenced files/symbols actually exist in the repo. |
+| `/cpl profile` | Your recurring prompt weaknesses over time (from your local log). |
 | `/cpl stats` | Gated/passed counts + estimated tokens saved (from your local log). |
+| `/cpl template <name>` | Emits a reusable prompt template (`bugfix`, `refactor`, `migration`). |
 | `/cpl help` | List available commands. |
 
 ---
@@ -214,7 +218,7 @@ hook events and `/cpl` commands to the right one. Adding a skill = a new file in
 ```
 hooks/dispatcher.py     entry point (hook + command)
 cpl/registry.py         skill discovery + routing
-cpl/skills/             gate, rewrite, stats, explain, … (4 stubs for v1.x)
+cpl/skills/             gate, rewrite, stats, explain, profile, expand, scope, template
 cpl/shared/             rules, model_client, log, feedback, config
 config/cpl.config.json  configuration
 eval/                   labelled prompt sets + run_eval.py
@@ -223,8 +227,8 @@ templates/              prompt templates (bugfix / refactor / migration)
 
 ### Roadmap
 
-- **v1.0 (now):** gate, rewrite, stats, explain. Rules + optional local model.
-- **v1.x:** `profile` (your recurring weaknesses), `expand` (scaffold terse
+- **v1.0:** gate, rewrite, stats, explain. Rules + optional local model.
+- **v1.1 (now):** `profile` (recurring weaknesses), `expand` (scaffold terse
   prompts), `scope` (verify referenced files/symbols exist), `template`.
 
 ---

@@ -4,6 +4,35 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-06-06
+
+Ships the four differentiator skills that were stubbed in 1.0, all enabled by
+default.
+
+### Added
+- **`/cpl profile`** — reads your local prompt log and surfaces recurring
+  weaknesses over time (a bar chart of issue categories + your top weakness and
+  how to fix it). Uses stable category tags, never your prompt text.
+- **`/cpl expand <prompt>`** — scaffolds a terse prompt into a structured one
+  (Task / Anchor / Constraints / Done-when) with `[placeholders]` for what you
+  didn't specify. Model-backed when enabled, static scaffold otherwise.
+- **`/cpl scope <prompt>`** — extracts referenced file paths and symbols and
+  verifies they exist in the repo, catching typos and stale references before
+  you send. Pure filesystem; no model, no network.
+- **`/cpl template <name>`** — emits a reusable prompt template
+  (bugfix / refactor / migration) from `templates/`.
+
+### Changed
+- The gate now records stable issue-category tags in the local log (for
+  `profile`); no prompt text is stored.
+- `model_client` exposes a generic `generate()` used by both `rewrite` and
+  `expand`; the output cleaner now also strips trailing instruction-echo lines
+  that small models sometimes append.
+
+### Quality
+Gate eval is unchanged: Tier 1 only 0.0% FPR / 3.3% FNR; with
+`qwen2.5:3b-instruct` 0.0% / 0.0%.
+
 ## [1.0.0] — 2026-06-06
 
 First public release. A local-first prompt-quality gate for Claude Code: it

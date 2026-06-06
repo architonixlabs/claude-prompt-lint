@@ -123,12 +123,17 @@ class RuleResult:
     issues: List[str] = field(default_factory=list)
     suggestions: List[str] = field(default_factory=list)
     anchors: int = 0  # count of concrete anchors found (informational)
+    categories: List[str] = field(default_factory=list)  # stable issue tags
 
-    def add(self, penalty: int, issue: str, suggestion: str) -> None:
+    def add(
+        self, penalty: int, issue: str, suggestion: str, category: str = ""
+    ) -> None:
         self.penalty += penalty
         self.issues.append(issue)
         if suggestion:
             self.suggestions.append(suggestion)
+        if category:
+            self.categories.append(category)
 
 
 def count_anchors(text: str) -> int:
@@ -164,6 +169,7 @@ def evaluate(text: str) -> RuleResult:
             "Dangling reference: it's not clear what 'it/this/that' points to.",
             "Name the file, function, or symbol you mean "
             "(e.g. `fix the null check in auth.py:parseToken`).",
+            category="dangling_reference",
         )
 
     # Rule: no concrete anchor at all in a substantive non-question prompt.
@@ -176,6 +182,7 @@ def evaluate(text: str) -> RuleResult:
             "No concrete anchor: no file path, symbol, error text, or quoted target.",
             "Point at something specific — a path, a function name, the error message, "
             "or paste the relevant snippet.",
+            category="no_anchor",
         )
 
     # Rule: pure vague verb with almost no object (very short + vague).
@@ -185,6 +192,7 @@ def evaluate(text: str) -> RuleResult:
             "Vague verb with no object (e.g. 'improve', 'optimize', 'clean up').",
             "Say what to improve and what 'better' means here "
             "(faster? smaller? more readable? which metric?).",
+            category="vague_verb",
         )
 
     # Soft signal: change request with no acceptance criteria / constraints.
@@ -198,6 +206,7 @@ def evaluate(text: str) -> RuleResult:
             "No acceptance criteria: nothing states what 'done' looks like.",
             "Add what success looks like — expected output, a test that should pass, "
             "or constraints to respect.",
+            category="no_acceptance_criteria",
         )
 
     # Soft signal: long ramble with no clear anchor (lots of words, no referents).
@@ -206,6 +215,7 @@ def evaluate(text: str) -> RuleResult:
             10,
             "Long prompt with no concrete anchor — the core ask may be buried.",
             "Lead with the one-line ask, then context. Reference the specific target.",
+            category="long_ramble",
         )
 
     return res

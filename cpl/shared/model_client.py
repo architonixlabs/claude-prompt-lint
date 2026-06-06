@@ -13,6 +13,7 @@ The checker must never block the user because the local model misbehaved.
 from __future__ import annotations
 
 import json
+import re
 import socket
 import urllib.error
 import urllib.parse
@@ -130,24 +131,26 @@ _REWRITE_SYSTEM = (
 )
 
 
-def rewrite(
-    user_prompt: str,
+def generate(
+    full_prompt: str,
     endpoint: str,
     model: str,
     timeout_ms: int,
+    num_predict: int = 400,
+    temperature: float = 0.3,
 ) -> Optional[str]:
-    """Ask the local model for a tightened version. Returns text or None."""
-    full = (
-        f"{_REWRITE_SYSTEM}\n\n"
-        f"ORIGINAL PROMPT:\n<<<\n{user_prompt.strip()}\n>>>\n\nREWRITTEN PROMPT:"
-    )
+    """Run a free-form generation and return cleaned plain text (or None).
+
+    `full_prompt` is the complete prompt (system + content) — the caller owns
+    the framing. Used by rewrite() and the expand skill.
+    """
     body = {
         "model": model,
-        "prompt": full,
+        "prompt": full_prompt,
         "stream": False,
         "options": {
-            "temperature": 0.3,
-            "num_predict": 400,
+            "temperature": temperature,
+            "num_predict": num_predict,
         },
     }
     raw = _call(endpoint, body, timeout_ms)
@@ -161,6 +164,20 @@ def rewrite(
     if not isinstance(text, str):
         return None
     return _clean_rewrite(text)
+
+
+def rewrite(
+    user_prompt: str,
+    endpoint: str,
+    model: str,
+    timeout_ms: int,
+) -> Optional[str]:
+    """Ask the local model for a tightened version. Returns text or None."""
+    full = (
+        f"{_REWRITE_SYSTEM}\n\n"
+        f"ORIGINAL PROMPT:\n<<<\n{user_prompt.strip()}\n>>>\n\nREWRITTEN PROMPT:"
+    )
+    return generate(full, endpoint, model, timeout_ms)
 
 
 def _clean_rewrite(text: str) -> Optional[str]:
@@ -178,6 +195,15 @@ def _clean_rewrite(text: str) -> Optional[str]:
     # Unwrap a fully-quoted result.
     if len(text) >= 2 and text[0] in "\"'" and text[-1] == text[0]:
         text = text[1:-1].strip()
+    # Drop trailing instruction-echo lines small models sometimes append
+    # (e.g. "Return only those four lines.", "Respond with JSON only.").
+    lines = text.splitlines()
+    while lines and re.match(
+        r"^\s*(return only|respond with|output only|format:)\b",
+        lines[-1], re.IGNORECASE,
+    ):
+        lines.pop()
+    text = "\n".join(lines).strip()
     return text or None
 
 

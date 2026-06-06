@@ -16,9 +16,9 @@
     "rewrite": true,
     "stats": true,
     "explain": true,
-    "profile": false,
-    "expand": false,
-    "scope": false,
-    "template": false
+    "profile": true,
+    "expand": true,
+    "scope": true,
+    "template": true
   }
 }

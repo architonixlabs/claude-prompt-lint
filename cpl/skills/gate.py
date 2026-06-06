@@ -76,7 +76,8 @@ def _verdict_to_result(
     )
 
 
-def _log(ctx: Context, action: str, score: int, tier: str, issues) -> None:
+def _log(ctx: Context, action: str, score: int, tier: str, issues,
+         categories=None) -> None:
     if ctx.log_path is None:
         return
     log.append(
@@ -89,6 +90,8 @@ def _log(ctx: Context, action: str, score: int, tier: str, issues) -> None:
             "mode": ctx.config.get("mode", "warn"),
             "prompt_len": len(ctx.prompt.strip()),
             "issue_count": len(issues),
+            # Stable category tags (not the prompt text) for the profile skill.
+            "categories": list(categories or []),
         },
     )
 
@@ -122,13 +125,13 @@ def run(ctx: Context) -> Result:
     #      file/symbol/error is actionable; sending it to a small local model
     #      just invites false positives (the model nitpicks "full file path").
     if r1.penalty <= _STRONG_PASS_MAX or (r1.anchors >= 1 and r1.penalty <= 10):
-        _log(ctx, "pass", score, "tier1", r1.issues)
+        _log(ctx, "pass", score, "tier1", r1.issues, r1.categories)
         return Result(action="pass", score=score, meta={"tier": "tier1"})
 
     # Strong fail — confident enough to act without the model.
     if r1.penalty >= _STRONG_FAIL_MIN:
         res = _verdict_to_result(cfg, score, r1.issues, r1.suggestions, "tier1")
-        _log(ctx, res.action, score, "tier1", r1.issues)
+        _log(ctx, res.action, score, "tier1", r1.issues, r1.categories)
         return res
 
     # Inconclusive — escalate to Tier 2 model if enabled.
@@ -161,16 +164,16 @@ def run(ctx: Context) -> Result:
                 res = _verdict_to_result(
                     cfg, merged_score, issues, suggestions, "tier2"
                 )
-                _log(ctx, res.action, merged_score, "tier2", issues)
+                _log(ctx, res.action, merged_score, "tier2", issues, r1.categories)
                 return res
-            _log(ctx, "pass", merged_score, "tier2", r1.issues)
+            _log(ctx, "pass", merged_score, "tier2", r1.issues, r1.categories)
             return Result(action="pass", score=merged_score, meta={"tier": "tier2"})
         # Model down / malformed -> fail-open to pass (don't punish ambiguity).
-        _log(ctx, "pass", score, "tier2-failopen", r1.issues)
+        _log(ctx, "pass", score, "tier2-failopen", r1.issues, r1.categories)
         return Result(action="pass", score=score, meta={"tier": "tier2-failopen"})
 
     # Model disabled and only middling penalty -> lenient pass.
-    _log(ctx, "pass", score, "tier1-lenient", r1.issues)
+    _log(ctx, "pass", score, "tier1-lenient", r1.issues, r1.categories)
     return Result(action="pass", score=score, meta={"tier": "tier1-lenient"})
 
 
