@@ -57,6 +57,14 @@ def _debug(cfg, msg: str) -> None:
         pass
 
 
+def _safe_cfg() -> dict:
+    """Load config but never raise — used in last-resort fallbacks."""
+    try:
+        return config_mod.load_config()
+    except Exception:
+        return {}
+
+
 def _read_stdin_json() -> dict:
     try:
         raw = sys.stdin.read()
@@ -175,7 +183,7 @@ def handle_command(command: str, args: str, cfg) -> int:
             f"  Status   : gate {'enabled' if enabled else 'DISABLED'}, "
             f"mode={mode}, model tier {model}\n"
             f"  Bypass   : start a prompt with `{bypass}` to skip the gate once\n"
-            f"  Off      : set \"enabled\": false in config/cpl.config.json\n"
+            f"  Off      : put {{\"enabled\": false}} in ~/.cpl/config.json\n"
             "\n"
             f"  Commands : {cmds}\n"
             "  Usage    : /cpl <command> [args]\n"
@@ -218,9 +226,16 @@ def handle_command(command: str, args: str, cfg) -> int:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="cpl-dispatcher", add_help=False)
     parser.add_argument("--event", default=None)
-    parser.add_argument("--command", default=None)
+    # nargs="?" so a bare `--command` (empty $ARGUMENTS when the user types just
+    # `/cpl`) routes to help instead of an argparse error.
+    parser.add_argument("--command", nargs="?", default=None, const="")
     parser.add_argument("rest", nargs=argparse.REMAINDER)
-    ns, _unknown = parser.parse_known_args(argv)
+    try:
+        ns, _unknown = parser.parse_known_args(argv)
+    except SystemExit:
+        # argparse calls sys.exit on parse errors; never let that surface as a
+        # crash. Fall back to help (command) / pass (hook is unaffected here).
+        return handle_command("help", "", _safe_cfg())
 
     try:
         cfg = config_mod.load_config()

@@ -29,7 +29,7 @@ Run the dispatcher in command mode and relay its output to the user verbatim:
 | `/cpl help` | List available commands. |
 
 All eight skills are enabled by default; toggle any of them under `"skills"` in
-`config/cpl.config.json`.
+`~/.cpl/config.json` (your per-user override; survives plugin updates).
 
 ## Behaviour notes
 

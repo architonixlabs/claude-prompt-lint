@@ -4,6 +4,29 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.2] — 2026-06-06
+
+Install/config usability fixes found by testing a real marketplace install.
+
+### Fixed
+- **Typing bare `/cpl` (no subcommand) crashed** with an argparse error instead
+  of showing help. The command spec passes an empty `$ARGUMENTS`, which left
+  `--command` with no value. `--command` is now optional (`nargs="?"`) and any
+  argparse error falls back to help. `/cpl` alone now prints the help screen.
+
+### Documentation
+- **Config now points users to `~/.cpl/config.json`** (the per-user override
+  that survives plugin updates) instead of the bundled
+  `config/cpl.config.json`, which on a marketplace install lives inside the
+  version-pinned plugin cache and is overwritten on every upgrade. Documented
+  the full resolution order and that only changed keys are needed (deep-merged).
+- Off-switch, `/cpl help`, and the command doc all now reference
+  `~/.cpl/config.json`.
+
+> Verified on a real marketplace install: the hook fires in live sessions,
+> `${CLAUDE_PLUGIN_ROOT}` resolves, `python3` runs, warn/block/pass all behave,
+> and a `~/.cpl/config.json` override (e.g. `{"mode":"block"}`) takes effect.
+
 ## [1.1.1] — 2026-06-06
 
 Hardening pass from a cross-validation audit (user, AI-agent, and code-review

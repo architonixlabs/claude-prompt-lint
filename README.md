@@ -116,8 +116,22 @@ Just type. Weak prompts get flagged. To bypass on purpose, prefix with `!!`:
 
 ## Configuration
 
-Edit [`config/cpl.config.json`](config/cpl.config.json). You can also drop a
-`~/.cpl/config.json` to override per-user, or point `$CPL_CONFIG` at a file.
+**If you installed via the marketplace, configure here:** create
+`~/.cpl/config.json` and put only the keys you want to change in it. They're
+deep-merged over the defaults, so a one-line file is enough:
+
+```json
+{ "mode": "block", "use_model": true }
+```
+
+> Why not edit the bundled `config/cpl.config.json`? On a marketplace install
+> that file lives inside the version-pinned plugin cache
+> (`~/.claude/plugins/cache/architonix-labs/claude-prompt-lint/<version>/`),
+> which is overwritten on every update. `~/.cpl/config.json` is yours and
+> survives upgrades. (You can also point `$CPL_CONFIG` at any file.)
+
+Resolution order (later wins): built-in defaults → the plugin's bundled
+`config/cpl.config.json` → `~/.cpl/config.json` → `$CPL_CONFIG`.
 
 ```json
 {
@@ -161,7 +175,9 @@ the gate.
 
 ### Turning it off
 
-- **For one prompt:** prefix it with `!!` (the `bypass_prefix`).
+All of these go in `~/.cpl/config.json` (see Configuration above):
+
+- **For one prompt:** prefix it with `!!` (the `bypass_prefix`) — no config needed.
 - **The whole gate, temporarily:** set `"mode": "warn"` (default) so it never
   erases prompts — it only adds a note.
 - **Everything:** set `"enabled": false`. cpl stops doing anything; `/cpl`

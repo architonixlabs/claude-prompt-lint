@@ -1,6 +1,6 @@
 {
   "name": "claude-prompt-lint",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Lint your prompt before you spend the token. A local-first prompt-quality gate for Claude Code that blocks weak prompts pre-send using fast local rules and an optional local model.",
   "author": {
     "name": "Ram Chandra Samal",
