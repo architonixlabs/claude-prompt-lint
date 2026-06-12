@@ -104,13 +104,28 @@ Just type. Weak prompts get flagged. To bypass on purpose, prefix with `!!`:
 | Command | What it does |
 |---------|--------------|
 | `/cpl rewrite <prompt>` | Returns a tightened version of your prompt to copy. |
-| `/cpl expand <prompt>` | Scaffolds a terse prompt into Task / Anchor / Constraints / Done-when. |
+| `/cpl expand [framework] <prompt>` | Restructure a prompt with a framework (interactive). |
 | `/cpl explain <prompt>` | Detailed breakdown of what's weak and why. |
 | `/cpl scope <prompt>` | Checks that referenced files/symbols actually exist in the repo. |
 | `/cpl profile` | Your recurring prompt weaknesses over time (from your local log). |
 | `/cpl stats` | Gated/passed counts + estimated tokens saved (from your local log). |
 | `/cpl template <name>` | Emits a reusable prompt template (`bugfix`, `refactor`, `migration`). |
 | `/cpl help` | List available commands. |
+
+### Prompt frameworks (`/cpl expand`)
+
+`expand` structures a prompt using a named framework. Ships with `default`
+(Task/Anchor/Constraints/Done-when), `aim` (Audience/Intent/Message), `race`,
+`costar`, and `tag`. `/cpl expand` (no args) lists them.
+
+- Apply one: `/cpl expand race fix the login bug`.
+- Interactive by default — cpl walks you through each section. One-shot:
+  `/cpl expand --quick race fix the login bug`.
+- Personal defaults live under `"expand"` in `~/.cpl/config.json`
+  (`default_framework`, `interactive`, `tone`, `verbosity`).
+- **Your own frameworks:** drop a JSON file in `~/.cpl/frameworks/` — same shape
+  as the shipped ones (`name`, `aliases`, `description`, `sections`). A file that
+  reuses a shipped name overrides it.
 
 ---
 
@@ -169,6 +184,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 | `log_path` | `~/.cpl/prompts.log.jsonl` | Local JSONL prompt log. `~` and env vars are expanded. |
 | `debug_log` | `false` | When `true`, writes hook/skill errors to `cpl-debug.log` next to the log for troubleshooting. |
 | `skills` | all on | Enable/disable individual skills by name. |
+| `expand` | (object) | `default_framework`, `interactive`, `tone`, `verbosity` for `/cpl expand`. |
 
 **Default mode is `warn`** — lenient on purpose. Flip to `block` once you trust
 the gate.

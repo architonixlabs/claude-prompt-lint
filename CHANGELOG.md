@@ -4,6 +4,20 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2026-06-13
+
+### Added
+
+- **Prompt frameworks for `/cpl expand`.** A data-driven library — `default`,
+  `aim`, `race`, `costar`, `tag` — applied with `/cpl expand <framework>
+  <prompt>`. `/cpl expand` lists them.
+- **Interactive expand.** By default cpl runs a framework picker (when none is
+  named) and a guided section fill, then assembles the prompt. `--quick` (or
+  `"expand": {"interactive": false}`) keeps the one-shot render.
+- **Personal defaults + custom frameworks.** An `"expand"` config block
+  (`default_framework`, `interactive`, `tone`, `verbosity`) and user-defined
+  frameworks in `~/.cpl/frameworks/*.json` (override shipped ones by name).
+
 ## [1.2.0] — 2026-06-13
 
 A review pass turned into five tracked issues (#1–#5), all fixed here.
