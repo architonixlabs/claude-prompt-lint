@@ -53,6 +53,21 @@ class UserOverrideAndSafety(unittest.TestCase):
         finally:
             bad.unlink()
 
+    def test_user_dir_overrides_shipped(self):
+        with tempfile.TemporaryDirectory() as user_fw_dir:
+            override = Path(user_fw_dir) / "race.json"
+            override.write_text(json.dumps({
+                "name": "race", "description": "user override",
+                "sections": [{"label": "X", "guidance": "y"}]
+            }), encoding="utf-8")
+            orig = fw._user_dir
+            fw._user_dir = lambda: Path(user_fw_dir)
+            try:
+                loaded = fw.load_frameworks()
+                self.assertEqual(loaded["race"].description, "user override")
+            finally:
+                fw._user_dir = orig
+
     def test_default_always_present(self):
         self.assertIn("default", fw.load_frameworks())
 

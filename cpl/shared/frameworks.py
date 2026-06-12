@@ -26,6 +26,7 @@ class Framework:
 # Hard-coded fallback so expand never breaks even if no files load.
 _DEFAULT = Framework(
     name="default",
+    aliases=["tacd"],
     description="Task / Anchor / Constraints / Done-when — the default structure.",
     sections=[
         {"label": "Task", "guidance": "the core ask in one line"},
@@ -65,7 +66,10 @@ def _parse(path: Path) -> Optional[Framework]:
                              "guidance": str(s.get("guidance", ""))})
     if not sections:
         return None
-    aliases = [str(a).lower() for a in data.get("aliases", []) if str(a).strip()]
+    raw_aliases = data.get("aliases", [])
+    if not isinstance(raw_aliases, list):
+        raw_aliases = []
+    aliases = [str(a).lower() for a in raw_aliases if str(a).strip()]
     return Framework(name=name, description=str(data.get("description", "")),
                      sections=sections, aliases=aliases)
 
