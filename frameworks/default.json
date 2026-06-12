@@ -1,0 +1,11 @@
+{
+  "name": "default",
+  "aliases": ["tacd"],
+  "description": "Task / Anchor / Constraints / Done-when — the default structure.",
+  "sections": [
+    {"label": "Task", "guidance": "the core ask in one line"},
+    {"label": "Anchor", "guidance": "file/function/error to act on"},
+    {"label": "Constraints", "guidance": "what to preserve / avoid"},
+    {"label": "Done when", "guidance": "how success is verified"}
+  ]
+}

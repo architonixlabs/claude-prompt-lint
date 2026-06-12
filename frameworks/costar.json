@@ -1,0 +1,13 @@
+{
+  "name": "costar",
+  "aliases": [],
+  "description": "Context / Objective / Style / Tone / Audience / Response.",
+  "sections": [
+    {"label": "Context", "guidance": "background the model needs"},
+    {"label": "Objective", "guidance": "the precise goal"},
+    {"label": "Style", "guidance": "writing or code style to follow"},
+    {"label": "Tone", "guidance": "register, e.g. formal/terse"},
+    {"label": "Audience", "guidance": "who consumes the result"},
+    {"label": "Response", "guidance": "required output format"}
+  ]
+}

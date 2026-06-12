@@ -1,0 +1,10 @@
+{
+  "name": "aim",
+  "aliases": [],
+  "description": "Audience / Intent / Message — frame a request by who, why, what.",
+  "sections": [
+    {"label": "Audience", "guidance": "who the output is for"},
+    {"label": "Intent", "guidance": "what you want to achieve"},
+    {"label": "Message", "guidance": "the core content to convey or build"}
+  ]
+}
