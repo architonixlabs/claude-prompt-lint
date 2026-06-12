@@ -105,7 +105,9 @@ def resolve(token: str, cfg: Dict) -> Tuple[Framework, bool]:
     key = (token or "").strip().lower()
     if key and key in frameworks:
         return frameworks[key], True
-    exp = cfg.get("expand", {}) if isinstance(cfg, dict) else {}
+    exp = cfg.get("expand") if isinstance(cfg, dict) else None
+    if not isinstance(exp, dict):
+        exp = {}
     default_name = str(exp.get("default_framework", "default")).lower()
     fw = frameworks.get(default_name) or frameworks.get("default") or _DEFAULT
     return fw, False

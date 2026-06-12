@@ -5,6 +5,7 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
@@ -40,6 +41,11 @@ class Parsing(unittest.TestCase):
         self.assertIn("framework: default", out)
         self.assertIn("prompt: fix the race condition", out)
 
+    def test_framework_name_only_no_prompt(self):
+        out = expand.run(_ctx("race")).payload
+        self.assertIn("framework: race", out)
+        self.assertIn("prompt:", out)   # empty prompt line is valid
+
 
 class Modes(unittest.TestCase):
     def test_quick_flag_forces_static_scaffold(self):
@@ -61,6 +67,26 @@ class Modes(unittest.TestCase):
         self.assertNotIn("CPL_EXPAND_SPEC", out)
         self.assertIn("Role", out)            # race section label
         self.assertIn("build a parser", out)
+
+    def test_short_q_flag_forces_scaffold(self):
+        cfg = {"use_model": False,
+               "expand": {"interactive": True, "default_framework": "default"}}
+        out = expand.run(Context(prompt="-q add caching", args="-q add caching",
+                                 config=cfg, event="command")).payload
+        self.assertNotIn("CPL_EXPAND_SPEC", out)
+        self.assertIn("add caching", out)
+
+    def test_model_oneshot_uses_generate(self):
+        cfg = {"use_model": True, "model": "x",
+               "model_endpoint": "http://localhost:1/api", "model_timeout_ms": 1500,
+               "expand": {"interactive": False, "default_framework": "default"}}
+        with mock.patch("cpl.shared.model_client.generate",
+                        return_value="Task: do the thing") as gen:
+            out = expand.run(Context(prompt="do the thing", args="do the thing",
+                                     config=cfg, event="command")).payload
+        gen.assert_called_once()
+        self.assertIn("do the thing", out)
+        self.assertNotIn("CPL_EXPAND_SPEC", out)
 
 
 if __name__ == "__main__":
