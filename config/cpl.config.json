@@ -11,6 +11,12 @@
   "fail_open": true,
   "log_path": "~/.cpl/prompts.log.jsonl",
   "debug_log": false,
+  "expand": {
+    "default_framework": "default",
+    "interactive": true,
+    "tone": "neutral",
+    "verbosity": "concise"
+  },
   "skills": {
     "gate": true,
     "rewrite": true,
