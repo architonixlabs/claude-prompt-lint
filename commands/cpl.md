@@ -42,13 +42,14 @@ All eight skills are enabled by default; toggle any of them under `"skills"` in
 ### `/cpl expand` (interactive)
 
 The dispatcher output for `expand` may be a `CPL_EXPAND_SPEC` block (lines:
-`framework:`, `description:`, `tone:`, `verbosity:`, `prompt:`, a `sections:`
-list of `- Label: guidance`, and an `available_frameworks:` list). When you see
-it, DO NOT relay it verbatim — drive an interactive flow instead:
+`framework:`, `framework_named:` (true/false), `description:`, `tone:`,
+`verbosity:`, `prompt:`, a `sections:` list of `- Label: guidance`, and an
+`available_frameworks:` list). When you see it, DO NOT relay it verbatim — drive
+an interactive flow instead:
 
-1. **Picker.** If `framework:` is `default` *and the user did not name a
-   framework*, offer the `available_frameworks` list and let them choose. If they
-   named one, skip the picker.
+1. **Picker.** If `framework_named:` is `false`, offer the
+   `available_frameworks` list and let the user choose. If it's `true`, they
+   already named one — skip the picker.
 2. **Guided fill.** For each section in `sections:`, gather content with the
    user. Seed each section from anything already in `prompt:`; only ask about
    sections that aren't already covered. Respect `tone:` and `verbosity:`.
@@ -59,3 +60,10 @@ If the user wants no conversation, tell them to use `/cpl expand --quick
 [framework] <prompt>`, which the dispatcher renders directly (relay that
 verbatim). Output that is NOT a `CPL_EXPAND_SPEC` block (a scaffold, a model
 result, or the framework list) is already final — relay it verbatim.
+
+**Reserved tokens:** `default`, `aim`, `race`, `costar`, `tag` (and any custom
+framework name) are treated as the framework when they're the **first** word of
+the args. So `/cpl expand race the login bug` means framework=`race`,
+prompt=`the login bug`. If a prompt genuinely needs to start with one of those
+words, lead with an explicit framework, e.g. `/cpl expand default race
+condition in worker.py`.

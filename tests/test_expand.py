@@ -34,11 +34,13 @@ class Parsing(unittest.TestCase):
         # interactive spec should name RACE and carry the remaining prompt
         out = expand.run(_ctx("race fix the login bug")).payload
         self.assertIn("framework: race", out)
+        self.assertIn("framework_named: true", out)
         self.assertIn("prompt: fix the login bug", out)
 
     def test_unknown_first_word_is_prompt(self):
         out = expand.run(_ctx("fix the race condition")).payload
         self.assertIn("framework: default", out)
+        self.assertIn("framework_named: false", out)
         self.assertIn("prompt: fix the race condition", out)
 
     def test_framework_name_only_no_prompt(self):

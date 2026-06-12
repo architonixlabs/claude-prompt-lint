@@ -29,6 +29,8 @@ def _split_quick(args: str):
 
 
 def _split_framework(args: str, cfg):
+    """Return (framework, prompt, named) where `named` is True iff the user's
+    first token was an explicit framework name (vs. falling back to default)."""
     toks = args.split(maxsplit=1)
     first = toks[0] if toks else ""
     fw, consumed = fwlib.resolve(first, cfg)
@@ -36,7 +38,7 @@ def _split_framework(args: str, cfg):
         prompt = toks[1].strip() if len(toks) > 1 else ""
     else:
         prompt = args.strip()
-    return fw, prompt
+    return fw, prompt, consumed
 
 
 def _static_scaffold(fw, prompt) -> str:
@@ -61,9 +63,10 @@ def _model_system(fw, tone, verbosity) -> str:
     )
 
 
-def _framework_spec(fw, prompt, tone, verbosity) -> str:
+def _framework_spec(fw, prompt, tone, verbosity, named) -> str:
     lines = ["CPL_EXPAND_SPEC",
              f"framework: {fw.name}",
+             f"framework_named: {str(bool(named)).lower()}",
              f"description: {fw.description}",
              f"tone: {tone}",
              f"verbosity: {verbosity}",
@@ -99,12 +102,12 @@ def run(ctx: Context) -> Result:
     if not raw:
         return Result(action="message", payload=_list_message())
 
-    fw, prompt = _split_framework(raw, cfg)
+    fw, prompt, named = _split_framework(raw, cfg)
 
     # Interactive (default): emit the spec for the command layer to drive.
     if interactive and not quick:
         return Result(action="message",
-                      payload=_framework_spec(fw, prompt, tone, verbosity),
+                      payload=_framework_spec(fw, prompt, tone, verbosity, named),
                       meta={"mode": "interactive", "framework": fw.name})
 
     # One-shot, model-applied when on and a prompt is present.
