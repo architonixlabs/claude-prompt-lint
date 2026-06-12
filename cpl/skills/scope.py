@@ -19,9 +19,14 @@ from cpl.registry import Context, Result, Skill
 
 # file.ext or a/b/c.ext — must have an extension to avoid matching prose.
 _FILE_RE = re.compile(r"\b[\w./\\-]+\.[A-Za-z][A-Za-z0-9]{0,5}\b")
-# func(), Obj.method, snake_case, CamelCase — candidate symbols.
+# Candidate symbols, deliberately restricted to *shapes that read as code* so we
+# don't drag in prose. A bare snake_case word is too ambiguous with English
+# ("sign_in", "make_it"), so it's only counted when written as a call.
+#   foo()  obj.method  module.attr  CamelCase  snake_case()
 _SYMBOL_RE = re.compile(
-    r"\b\w+\(\)|\b[A-Za-z_]\w*\.[A-Za-z_]\w+\b|\b[a-z]+_[a-z_]+\b|\b[A-Z][a-z0-9]+[A-Z]\w*\b"
+    r"\b\w+\(\)"                       # a call: foo()  /  parse_config()
+    r"|\b[A-Za-z_]\w*\.[A-Za-z_]\w+\b"  # dotted: obj.method, mod.attr
+    r"|\b[A-Z][a-z0-9]+[A-Z]\w*\b"      # CamelCase: OrderRepository
 )
 
 _SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "dist",
@@ -90,7 +95,13 @@ def _symbols_present(root: Path, symbols):
     needles avoids re-walking the repo per symbol (which was up to 8x the work).
     Short-circuits as soon as every symbol is located.
     """
-    needles = {s: s.replace("()", "") for s in symbols if s.replace("()", "")}
+    # Compile a word-boundary regex per needle so `parseToken` does NOT match
+    # `parseTokenStream` (a raw substring search produced false "found" hits).
+    needles = {}
+    for s in symbols:
+        base = s.replace("()", "")
+        if base:
+            needles[s] = re.compile(r"\b" + re.escape(base) + r"\b")
     found = set()
     if not needles:
         return found
@@ -102,8 +113,8 @@ def _symbols_present(root: Path, symbols):
                 content = fh.read()
         except Exception:
             continue
-        for sym, needle in needles.items():
-            if sym not in found and needle in content:
+        for sym, pat in needles.items():
+            if sym not in found and pat.search(content):
                 found.add(sym)
     return found
 
