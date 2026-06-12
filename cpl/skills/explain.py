@@ -10,6 +10,11 @@ from __future__ import annotations
 from cpl.registry import Context, Result, Skill
 from cpl.shared import model_client, rules
 
+# `explain` is an interactive command, not the latency-critical gate. Give the
+# model a generous budget (matching `rewrite`/`expand`) so a cold Ollama model
+# doesn't spuriously report "unavailable" the way the gate's 1.5s would.
+_EXPLAIN_TIMEOUT_MS = 8000
+
 
 def run(ctx: Context) -> Result:
     target = (ctx.args or ctx.prompt or "").strip()
@@ -48,11 +53,12 @@ def run(ctx: Context) -> Result:
     # Optional Tier 2 detail.
     cfg = ctx.config
     if cfg.get("use_model", False):
+        timeout = max(int(cfg.get("model_timeout_ms", 1500)), _EXPLAIN_TIMEOUT_MS)
         verdict = model_client.evaluate(
             target,
             endpoint=cfg.get("model_endpoint"),
             model=cfg.get("model"),
-            timeout_ms=int(cfg.get("model_timeout_ms", 1500)),
+            timeout_ms=timeout,
         )
         if verdict is None:
             lines.append("  Tier-2 model: unavailable (fail-open — prompt would pass).")
