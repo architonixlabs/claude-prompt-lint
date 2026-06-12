@@ -29,7 +29,7 @@ def run(ctx: Context) -> Result:
             payload="[cpl stats] No prompt log yet. The gate writes one as you work.",
         )
 
-    records = [r for r in log.iter_records(ctx.log_path) if r.get("event") == "gate"]
+    records = [r for r in log.tail(ctx.log_path) if r.get("event") == "gate"]
     if not records:
         return Result(
             action="message",

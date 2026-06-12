@@ -49,7 +49,7 @@ def run(ctx: Context) -> Result:
                     "the gate records your prompt patterns locally as you go.",
         )
 
-    records = [r for r in log.iter_records(ctx.log_path) if r.get("event") == "gate"]
+    records = [r for r in log.tail(ctx.log_path) if r.get("event") == "gate"]
     if len(records) < _MIN_SAMPLES:
         return Result(
             action="message",
