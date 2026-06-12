@@ -4,6 +4,34 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-06-13
+
+A review pass turned into five tracked issues (#1–#5), all fixed here.
+
+### Fixed
+- **`stats` "tokens saved" read ~0 for almost everyone (#1).** Default mode is
+  `warn`, where flags log as `inject`, never `block` — and the estimate counted
+  only blocks. Now counts warn flags at half weight (175) alongside blocks
+  (350), so the headline metric is non-zero in the default configuration.
+- **`scope` reported false "found" for symbols (#2).** Symbol verification used
+  a raw substring match, so `parseToken()` matched `parseTokenStream`. Now
+  matches on word boundaries, and the symbol regex no longer pulls bare
+  snake_case prose (`sign_in`, `log_out`) — snake_case counts only as a call.
+- **`explain` showed spurious "model unavailable" (#5).** It inherited the
+  gate's 1.5s timeout; a cold Ollama model timed out. Now uses a generous
+  interactive timeout like `rewrite`/`expand`.
+
+### Added
+- **Bounded prompt log (#4).** The gate appends on every prompt; the log now
+  trims to the last 5,000 records once it passes a ~2 MB soft cap, and a new
+  `log.tail(n)` reads only the end of the file. `stats`/`profile` use it instead
+  of parsing the whole history.
+- **CI + test suite (#3).** A `tests/` suite (pure-stdlib `unittest`, zero deps)
+  covers the command skills, dispatcher routing, gate fail-open, and regression
+  guards for #1/#2/#4. A GitHub Actions workflow runs byte-compile + tests +
+  eval on Python 3.9 and 3.12, failing the build if the gate's false-positive
+  rate is ever non-zero.
+
 ## [1.1.2] — 2026-06-06
 
 Install/config usability fixes found by testing a real marketplace install.
