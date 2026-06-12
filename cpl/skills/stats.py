@@ -12,10 +12,14 @@ from collections import Counter
 from cpl.registry import Context, Result, Skill
 from cpl.shared import log
 
-# Rough heuristic: each blocked weak prompt saves ~one clarification round-trip.
+# Rough heuristic: a flagged weak prompt saves ~one clarification round-trip.
 # A round-trip ≈ a short model reply asking for specifics + the user's resend.
-# We deliberately under-claim to stay credible.
+# We deliberately under-claim to stay credible. Warn-mode flags count at half
+# weight: the prompt still proceeded, but the note nudges the user to tighten it,
+# which often saves a round-trip too. (Default mode is `warn`, so counting only
+# hard blocks would show ~0 saved for almost everyone.)
 _TOKENS_PER_BLOCK = 350
+_TOKENS_PER_WARN = 175
 
 
 def run(ctx: Context) -> Result:
@@ -41,7 +45,7 @@ def run(ctx: Context) -> Result:
     passed = actions.get("pass", 0)
     flagged = blocked + warned
 
-    est_tokens = blocked * _TOKENS_PER_BLOCK
+    est_tokens = blocked * _TOKENS_PER_BLOCK + warned * _TOKENS_PER_WARN
 
     lines = [
         "📊 cpl stats",
@@ -62,9 +66,10 @@ def run(ctx: Context) -> Result:
     lines += [
         "",
         f"  Est. tokens saved : ~{est_tokens:,} "
-        f"(rough: {blocked} blocks × ~{_TOKENS_PER_BLOCK}/clarification)",
+        f"({blocked}×{_TOKENS_PER_BLOCK} blocks + {warned}×{_TOKENS_PER_WARN} warns)",
         "",
-        "  (Estimate is a heuristic — see README. Only hard blocks count.)",
+        "  (Heuristic — see README. Every flagged prompt counts; warns at half "
+        "weight.)",
     ]
 
     return Result(action="message", payload="\n".join(lines))
