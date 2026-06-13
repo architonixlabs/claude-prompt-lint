@@ -97,6 +97,23 @@ class DispatcherRouting(unittest.TestCase):
         dispatcher.handle_command("", "", self.cfg)
         self.assertIn("lint your prompt", out[0].lower())
 
+    def test_command_args_preserves_skill_flags(self):
+        # Regression: argparse used to divert `--quick` into 'unknown' and drop
+        # it. The skill must receive flags verbatim.
+        got = dispatcher._command_args(
+            ["--command", "expand", "--quick", "race", "fix", "login"])
+        self.assertEqual(got, "--quick race fix login")
+
+    def test_quick_flag_survives_full_dispatch(self):
+        # End-to-end through main(): --quick must force a one-shot render, not
+        # the interactive CPL_EXPAND_SPEC block.
+        out = []
+        dispatcher._write = lambda t: (out.append(t) or 0)
+        dispatcher.main(["--command", "expand", "--quick", "race", "fix login"])
+        payload = "".join(out)
+        self.assertNotIn("CPL_EXPAND_SPEC", payload)
+        self.assertIn("Role", payload)  # race scaffold label
+
 
 class GateBehavior(unittest.TestCase):
     def test_bypass_prefix_passes(self):

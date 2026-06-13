@@ -223,7 +223,21 @@ def handle_command(command: str, args: str, cfg) -> int:
     return _emit_message("[cpl] (no output)")
 
 
+def _command_args(argv) -> str:
+    """The literal arg string after `--command <skill>`.
+
+    We extract this from raw argv rather than argparse REMAINDER because
+    argparse diverts skill flags like `--quick` into 'unknown' and drops them.
+    Everything after the skill token is the skill's args, flags included.
+    """
+    if "--command" not in argv:
+        return ""
+    after = argv[argv.index("--command") + 1:]   # [skill, *args]
+    return " ".join(after[1:]).strip()           # drop the skill token
+
+
 def main(argv=None) -> int:
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
     parser = argparse.ArgumentParser(prog="cpl-dispatcher", add_help=False)
     parser.add_argument("--event", default=None)
     # nargs="?" so a bare `--command` (empty $ARGUMENTS when the user types just
@@ -231,7 +245,7 @@ def main(argv=None) -> int:
     parser.add_argument("--command", nargs="?", default=None, const="")
     parser.add_argument("rest", nargs=argparse.REMAINDER)
     try:
-        ns, _unknown = parser.parse_known_args(argv)
+        ns, _unknown = parser.parse_known_args(raw_argv)
     except SystemExit:
         # argparse calls sys.exit on parse errors; never let that surface as a
         # crash. Fall back to help (command) / pass (hook is unaffected here).
@@ -247,7 +261,8 @@ def main(argv=None) -> int:
         if ns.event:
             return handle_hook(ns.event, cfg)
         if ns.command is not None:
-            args = " ".join(ns.rest).strip()
+            # Take args from raw argv so skill flags (e.g. --quick) survive.
+            args = _command_args(raw_argv)
             return handle_command(ns.command.strip(), args, cfg)
         # No mode specified -> treat as help.
         return handle_command("help", "", cfg)

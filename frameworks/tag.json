@@ -1,0 +1,10 @@
+{
+  "name": "tag",
+  "aliases": [],
+  "description": "Task / Action / Goal — a compact action framework.",
+  "sections": [
+    {"label": "Task", "guidance": "what needs doing"},
+    {"label": "Action", "guidance": "the concrete steps to take"},
+    {"label": "Goal", "guidance": "the end state you want"}
+  ]
+}

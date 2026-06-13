@@ -1,0 +1,11 @@
+{
+  "name": "race",
+  "aliases": [],
+  "description": "Role / Action / Context / Expectation — a general task framework.",
+  "sections": [
+    {"label": "Role", "guidance": "who the assistant should act as"},
+    {"label": "Action", "guidance": "the specific task to perform"},
+    {"label": "Context", "guidance": "background, constraints, relevant files"},
+    {"label": "Expectation", "guidance": "what a good result looks like"}
+  ]
+}
