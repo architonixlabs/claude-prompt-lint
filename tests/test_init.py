@@ -43,6 +43,21 @@ class MergeSection(unittest.TestCase):
         sec = f"{_START}\nX\n{_END}"
         self.assertEqual(init._merge_section("", sec), sec)
 
+    def test_stray_end_marker_in_prose_preserved(self):
+        # A literal end-marker in user prose below the section must NOT cause loss.
+        existing = (f"{_START}\nOLD\n{_END}\n\n"
+                    "# Docs\nThe closing marker is " + _END + " in prose.\nKEEPME\n")
+        out = init._merge_section(existing, f"{_START}\nNEW\n{_END}")
+        self.assertIn("NEW", out)
+        self.assertNotIn("OLD", out)
+        self.assertIn("# Docs", out)
+        self.assertIn("KEEPME", out)        # nothing below was dropped
+
+    def test_orphan_start_marker_appends(self):
+        out = init._merge_section(f"# Notes\n{_START}\n", f"{_START}\nX\n{_END}")
+        self.assertIn("# Notes", out)
+        self.assertIn("X", out)
+
 
 class RunCommand(unittest.TestCase):
     def _cwd(self):

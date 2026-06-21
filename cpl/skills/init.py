@@ -24,15 +24,16 @@ _END = "<!-- cpl:context:end -->"
 def _merge_section(existing: str, section: str) -> str:
     """Replace the delimited cpl section in `existing`, else append it.
 
-    Tolerates duplicate markers by replacing from the first start to the last
-    end. Pure and total."""
+    Replaces from the first start to the first end after it, so stray
+    end-markers in user prose below the section are never consumed. Pure and
+    total."""
     if not existing.strip():
         return section
     i = existing.find(_START)
     if i == -1:
         return existing.rstrip() + "\n\n" + section + "\n"
-    j = existing.rfind(_END)
-    if j == -1 or j < i:
+    j = existing.find(_END, i)   # first end AFTER the start — never eats user prose below
+    if j == -1:
         return existing.rstrip() + "\n\n" + section + "\n"
     return existing[:i] + section + existing[j + len(_END):]
 
