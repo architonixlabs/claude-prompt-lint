@@ -147,6 +147,27 @@ class Behavior(unittest.TestCase):
         self.assertFalse(secrets.has_block(None))  # type: ignore
         self.assertFalse(secrets.has_warn(None))   # type: ignore
 
+    def test_short_assignment_secret_not_leaked(self):
+        for text in ("pwd=abc123", "password=Tiger99"):
+            fs = secrets.scan(text)
+            prev = " ".join(f.preview for f in fs)
+            self.assertNotIn("c123", prev)
+            self.assertNotIn("er99", prev)
+            self.assertIn("redacted", prev.lower())
+
+    def test_connection_string_password_not_leaked(self):
+        fs = secrets.scan("postgres://admin:SuperSecret123@db/app")
+        prev = " ".join(f.preview for f in fs)
+        self.assertNotIn("Secret123", prev)
+        self.assertNotIn("123@", prev)
+
+    def test_catastrophic_custom_regex_skipped(self):
+        cfg = {"mask": {"custom_patterns": [
+            {"name": "bad", "regex": r"(a+)+$", "severity": "block"}]}}
+        # Must return promptly and not hang; built-ins still work.
+        ks = {f.kind for f in secrets.scan("sk-abcdefghijklmnop0123456789 aaaaaaa!", cfg)}
+        self.assertIn("openai_key", ks)
+
 
 if __name__ == "__main__":
     unittest.main()

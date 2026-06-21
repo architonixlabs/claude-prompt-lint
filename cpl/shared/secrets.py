@@ -18,6 +18,15 @@ PII = "pii"
 BLOCK = "block"
 WARN = "warn"
 
+# Heuristic to skip user custom regexes with classic catastrophic-backtracking
+# shapes — (a+)+, (a*)*, (.*)+ , etc. Not exhaustive, but blocks the common
+# foot-guns so a config typo can't wedge every prompt (fail-open stays intact).
+_REDOS_HINT = re.compile(r"[+*][)\]]\s*[+*]|\([^)]*[+*][^)]*\)\s*[+*]")
+
+
+def _maybe_catastrophic(pattern: str) -> bool:
+    return bool(_REDOS_HINT.search(pattern))
+
 
 @dataclass
 class Finding:
@@ -101,12 +110,28 @@ def _preview(kind: str, value: str) -> str:
         return "«PRIVATE KEY redacted»"
     if kind == "email":
         name, _, dom = value.partition("@")
+        if not dom:
+            return "…@…"
         d = dom.split(".")
-        return f"{name[:1]}…@{d[0][:1]}….{d[-1]}" if "@" in value else "…@…"
+        return f"{name[:1]}…@{d[0][:1]}….{d[-1]}"
     v = value.strip()
-    if len(v) <= 8:
-        return (v[:1] + "…") if v else "…"
-    return f"{v[:4]}…{v[-4:]}"
+    # Structured kinds: show only the non-secret label/scheme, redact the value.
+    if kind in ("secret_assignment", "password_assignment"):
+        parts = re.split(r"([:=])", v, maxsplit=1)
+        if len(parts) >= 3:
+            return f"{parts[0]}{parts[1]}«redacted»"
+        return "«redacted»"
+    if kind == "connection_string":
+        scheme = v.split("://", 1)[0]
+        return f"{scheme}://…@"
+    if kind == "bearer_token":
+        return "Bearer «redacted»"
+    # Opaque tokens (aws/openai/github/…): reveal at most a small head+tail,
+    # nothing for short values.
+    if len(v) <= 10:
+        return (v[:2] + "…") if len(v) > 2 else "…"
+    keep = min(4, len(v) // 4)
+    return f"{v[:keep]}…{v[-keep:]}"
 
 
 def _allowlist(cfg: Optional[Dict]):
@@ -133,6 +158,8 @@ def _custom(cfg: Optional[Dict]):
         sev = item.get("severity", BLOCK)
         if not name or not rx:
             continue
+        if _maybe_catastrophic(str(rx)):
+            continue   # skip likely-catastrophic custom regex (fail-open)
         try:
             pat = re.compile(rx)
         except Exception:
