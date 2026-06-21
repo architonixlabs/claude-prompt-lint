@@ -67,6 +67,7 @@ _SKILL_MODULES = [
     "expand",
     "scope",
     "template",
+    "init",
 ]
 
 

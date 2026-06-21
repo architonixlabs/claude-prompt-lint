@@ -24,6 +24,9 @@
     "allowlist": [],
     "custom_patterns": []
   },
+  "init": {
+    "claude_md": "CLAUDE.md"
+  },
   "skills": {
     "mask": true,
     "gate": true,
@@ -33,6 +36,7 @@
     "profile": true,
     "expand": true,
     "scope": true,
-    "template": true
+    "template": true,
+    "init": true
   }
 }
