@@ -57,6 +57,27 @@ class Detects(unittest.TestCase):
     def test_ssn(self):
         self.assertIn("ssn", self._kinds("ssn 123-45-6789"))
 
+    def test_google_api_key(self):
+        self.assertIn("google_api_key", self._kinds("AIza" + "A" * 35))
+
+    def test_anthropic_key(self):
+        self.assertIn("anthropic_key", self._kinds("sk-ant-api03-" + "a" * 20))
+
+    def test_slack_token(self):
+        self.assertIn("slack_token", self._kinds("xoxb-123456789-abcdefghij"))
+
+    def test_stripe_key(self):
+        self.assertIn("stripe_key", self._kinds("sk_live_" + "a" * 16))
+
+    def test_bearer_token(self):
+        self.assertIn("bearer_token", self._kinds("Authorization: Bearer " + "a" * 20))
+
+    def test_ipv4(self):
+        self.assertIn("ipv4", self._kinds("server is 10.0.0.1"))
+
+    def test_phone(self):
+        self.assertIn("phone", self._kinds("call 555-867-5309"))
+
 
 class NoFalsePositives(unittest.TestCase):
     def _kinds(self, text):
@@ -118,6 +139,13 @@ class Behavior(unittest.TestCase):
         fs = secrets.scan("postgres://u:p@h/db and jane@example.com")
         self.assertTrue(secrets.has_block(fs))
         self.assertTrue(secrets.has_warn(fs))
+
+    def test_mask_text_none_returns_str(self):
+        self.assertEqual(secrets.mask_text(None, []), "")  # type: ignore
+
+    def test_has_helpers_tolerate_none(self):
+        self.assertFalse(secrets.has_block(None))  # type: ignore
+        self.assertFalse(secrets.has_warn(None))   # type: ignore
 
 
 if __name__ == "__main__":

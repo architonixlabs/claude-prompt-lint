@@ -183,17 +183,19 @@ def scan(text: str, cfg: Optional[Dict] = None) -> List[Finding]:
 def mask_text(text: str, findings: List[Finding]) -> str:
     """Replace each finding span with its masked preview (right-to-left)."""
     try:
+        if not isinstance(text, str):
+            return ""
         out = text
         for f in sorted(findings, key=lambda f: f.start, reverse=True):
             out = out[:f.start] + f.preview + out[f.end:]
         return out
     except Exception:
-        return text
+        return text if isinstance(text, str) else ""
 
 
 def has_block(findings: List[Finding]) -> bool:
-    return any(f.severity == BLOCK for f in findings)
+    return any(f.severity == BLOCK for f in (findings or []))
 
 
 def has_warn(findings: List[Finding]) -> bool:
-    return any(f.severity == WARN for f in findings)
+    return any(f.severity == WARN for f in (findings or []))
