@@ -312,6 +312,38 @@ Re-run with the model: `python eval/run_eval.py --use-model` (needs Ollama).
 
 ---
 
+## Docker (dev)
+
+cpl is a Claude Code *plugin*, not a network service — so the image doesn't run a
+server. It's a Linux dev/self-check image: it builds, runs the test suite + gate
+eval, and lets you exercise the dispatcher CLI on Linux. Pure standard library;
+the only dependency is Python.
+
+```bash
+docker build -t claude-prompt-lint-dev .
+docker run --rm claude-prompt-lint-dev                 # self-check: tests + eval (exits non-zero if FPR != 0%)
+docker run --rm claude-prompt-lint-dev python hooks/dispatcher.py --command help
+echo '{"prompt":"fix it"}' | docker run --rm -i claude-prompt-lint-dev \
+  python hooks/dispatcher.py --event UserPromptSubmit
+```
+
+Or via compose:
+
+```bash
+docker compose run --rm cpl-dev                         # build + self-check
+```
+
+**Optional Tier-2 model demo** (pulls ~2 GB the first time):
+
+```bash
+docker compose --profile model up -d ollama
+docker compose exec ollama ollama pull qwen2.5:3b-instruct
+```
+
+Then point cpl at it by mounting a config that sets `"use_model": true` and
+`"model_endpoint": "http://ollama:11434/api/generate"` (via `$CPL_CONFIG` or a
+bind-mounted `~/.cpl/config.json`).
+
 ## Architecture
 
 Everything is a **skill** behind a tiny common interface; a dispatcher routes

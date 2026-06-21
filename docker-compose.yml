@@ -1,0 +1,26 @@
+# Dev compose for claude-prompt-lint.
+#
+#   docker compose run --rm cpl-dev          # build + self-check (tests + eval)
+#   docker compose run --rm cpl-dev python hooks/dispatcher.py --command help
+#
+# Optional Tier-2 local model demo (pulls ~2 GB the first time):
+#   docker compose --profile model up -d ollama
+#   docker compose exec ollama ollama pull qwen2.5:3b-instruct
+#   # then point cpl at it with use_model:true and
+#   # model_endpoint http://ollama:11434/api/generate (see README → Docker).
+services:
+  cpl-dev:
+    build: .
+    image: claude-prompt-lint-dev:latest
+    # Inherits the Dockerfile CMD (tests + eval). Override per the comments above.
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["model"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  ollama:

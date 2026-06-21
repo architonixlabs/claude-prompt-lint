@@ -34,7 +34,12 @@ project adheres to [Semantic Versioning](https://semver.org/).
   trigger false drift.
 - **Shareable stats.** `/cpl stats` now prints a copy-pasteable hygiene line, and
   `/cpl stats share` emits only that line — cpl's first socially shareable
-  artifact (all other value stays private to your machine).
+  artifact (all other value stays private to your machine). The full report also
+  shows how often warns **coached the assistant**, so the coach path is provable.
+- **Docker dev image (Linux).** `Dockerfile` + `docker-compose.yml` build a
+  zero-dependency Linux image that self-checks (test suite + gate eval, exits
+  non-zero on any false positive) and runs the dispatcher CLI. It does not run a
+  server — cpl is a plugin. Optional `ollama` compose profile for a Tier-2 demo.
 
 ## [1.5.0] — 2026-06-21
 

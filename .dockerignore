@@ -1,0 +1,14 @@
+# Keep the build context small and the image clean.
+.git
+.gitattributes
+**/__pycache__/
+**/*.pyc
+.remember/
+.superpowers/
+docs/brainstorming/
+docs/superpowers/
+node_modules/
+*.log
+.vscode/
+.idea/
+*.cpltmp
