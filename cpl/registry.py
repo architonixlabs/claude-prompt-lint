@@ -56,8 +56,9 @@ class Skill:
 
 # --- Discovery -------------------------------------------------------------
 
-# Order matters only for display; resolution is by trigger match.
+# Order matters: for hooks, the first skill to block wins; inject messages accumulate.
 _SKILL_MODULES = [
+    "mask",
     "gate",
     "rewrite",
     "stats",

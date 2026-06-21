@@ -127,6 +127,21 @@ Just type. Weak prompts get flagged. To bypass on purpose, prefix with `!!`:
   as the shipped ones (`name`, `aliases`, `description`, `sections`). A file that
   reuses a shipped name overrides it.
 
+### Data masking (automatic)
+
+Every prompt is scanned **locally** for sensitive data before it leaves your
+machine:
+
+- **Secrets** (API keys, tokens, private keys, DB connection strings) **block**
+  the prompt. Because a hook can't silently rewrite your prompt, the block
+  message hands you the **prompt already masked** — paste it back and resend.
+- **PII** (emails, phone numbers, IPs, cards, SSNs) only **warns**.
+- **`/cpl mask <text>`** redacts text on demand.
+- Tune under `"mask"` in `~/.cpl/config.json`: `block_secrets`, `warn_pii`, a
+  `custom_patterns` list (`{name, regex, severity}`), and an `allowlist` for
+  false positives. `!!` does **not** skip a secret block — use the allowlist for
+  values you intend to send.
+
 ---
 
 ## Configuration
@@ -185,6 +200,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 | `debug_log` | `false` | When `true`, writes hook/skill errors to `cpl-debug.log` next to the log for troubleshooting. |
 | `skills` | all on | Enable/disable individual skills by name. |
 | `expand` | (object) | `default_framework`, `interactive`, `tone`, `verbosity` for `/cpl expand`. |
+| `mask` | (object) | `enabled`, `block_secrets`, `warn_pii`, `allowlist`, `custom_patterns` for data masking. |
 
 **Default mode is `warn`** — lenient on purpose. Flip to `block` once you trust
 the gate.

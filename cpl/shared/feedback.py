@@ -69,3 +69,36 @@ def format_warn_inject(
     if sugg:
         hint = f" Suggestion: {sugg[0]}"
     return f"[{_BRAND}] Prompt quality note (score {score}/100): {top}.{hint}"
+
+
+def format_mask_block(findings, masked_prompt: str) -> str:
+    """Block message: which secrets fired + the prompt already masked to resend."""
+    lines = ["🔒 cpl blocked — your prompt contains data that shouldn't be sent:",
+             ""]
+    seen = set()
+    for f in findings:
+        if f.severity != "block" or f.kind in seen:
+            continue
+        seen.add(f.kind)
+        lines.append(f"  • {f.label}: {f.preview}")
+    lines += ["",
+              "Send a cleaned version (copy & paste this):",
+              ""]
+    for ln in masked_prompt.splitlines() or [masked_prompt]:
+        lines.append(f"  {ln}")
+    lines += ["",
+              "If a match is a false positive, add it to mask.allowlist in "
+              "~/.cpl/config.json."]
+    return "\n".join(lines).rstrip()
+
+
+def format_mask_warn(findings) -> str:
+    """Compact warn note for PII (prompt still proceeds)."""
+    kinds = []
+    seen = set()
+    for f in findings:
+        if f.kind not in seen:
+            seen.add(f.kind)
+            kinds.append(f.label.lower())
+    listed = ", ".join(kinds) if kinds else "personal data"
+    return f"[{_BRAND}] heads-up: your prompt appears to contain {listed}."

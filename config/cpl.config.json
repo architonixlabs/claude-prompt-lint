@@ -17,7 +17,15 @@
     "tone": "neutral",
     "verbosity": "concise"
   },
+  "mask": {
+    "enabled": true,
+    "block_secrets": true,
+    "warn_pii": true,
+    "allowlist": [],
+    "custom_patterns": []
+  },
   "skills": {
+    "mask": true,
     "gate": true,
     "rewrite": true,
     "stats": true,

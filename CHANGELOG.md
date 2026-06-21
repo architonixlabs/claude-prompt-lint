@@ -4,6 +4,19 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] — 2026-06-21
+
+### Added
+- **Data masking (automatic, local).** Every prompt is scanned for sensitive
+  data before send: secrets (API keys, tokens, private keys, JWTs, connection
+  strings) **block** the prompt — with a paste-ready masked version, since the
+  platform can't silently rewrite prompts — and PII (email/phone/IP/card/SSN)
+  **warns**. New `/cpl mask <text>` redacts on demand.
+- **Config:** a `"mask"` block (`enabled`, `block_secrets`, `warn_pii`,
+  `allowlist`, `custom_patterns`). Masking is independent of the gate; `!!` does
+  not bypass a secret block (use the allowlist). Logs record detector kinds
+  only, never secret values.
+
 ## [1.3.0] — 2026-06-13
 
 ### Added
