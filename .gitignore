@@ -466,3 +466,6 @@ Thumbs.db
 # --- session scratch ---
 .remember/logs/
 google.geminicodeassist.*.log
+
+# Superpowers SDD scratch (progress ledger, etc.)
+.superpowers/
