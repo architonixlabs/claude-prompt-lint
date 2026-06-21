@@ -26,6 +26,7 @@ Run the dispatcher in command mode and relay its output to the user verbatim:
 | `/cpl profile` | Your recurring prompt weaknesses over time (local log). |
 | `/cpl stats` | Gated/passed counts + estimated tokens saved from your local log. |
 | `/cpl template <name>` | Emits a reusable prompt template (`bugfix`, `refactor`, `migration`). |
+| `/cpl mask <text>` | Returns a redacted copy of text (secrets/PII masked) to paste back. |
 | `/cpl help` | List available commands. |
 
 All eight skills are enabled by default; toggle any of them under `"skills"` in
@@ -34,6 +35,10 @@ All eight skills are enabled by default; toggle any of them under `"skills"` in
 ## Behaviour notes
 
 - All evaluation is **local**. No API tokens are spent by cpl itself.
+- **Data masking is automatic.** Every prompt is scanned locally; a detected
+  secret (API key, private key, connection string…) blocks the prompt before it
+  is sent, and the block message includes the prompt already masked to resend.
+  PII (emails, etc.) only warns. This runs even if the gate is off.
 - The output above is the skill's result. If the user asked you to actually
   rewrite their prompt (not just scaffold it), use the `rewrite` output as
   analysis and author a concrete tightened prompt for them — but never send it
