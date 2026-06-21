@@ -1,0 +1,39 @@
+name: release-image
+
+# Build and publish the Linux dev image to GitHub Container Registry.
+# Fires on version tags (v*) and can be run manually. Uses the built-in
+# GITHUB_TOKEN, which has package-write within Actions — no extra secrets.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  image:
+    name: build + push dev image to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build, self-check, and push
+        run: |
+          set -euo pipefail
+          VER="$(python -c "import re;print(re.search(r'\"([0-9.]+)\"', open('cpl/__init__.py').read()).group(1))")"
+          IMG="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/claude-prompt-lint-dev"
+          echo "Building $IMG:$VER"
+          docker build -t "$IMG:$VER" -t "$IMG:latest" .
+          # Gate the publish on the image's own self-check (tests + eval).
+          docker run --rm "$IMG:$VER"
+          docker push "$IMG:$VER"
+          docker push "$IMG:latest"
+          echo "Published $IMG:$VER and :latest"
