@@ -89,7 +89,8 @@ class StatsShare(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         log = d / "log.jsonl"
         recs = ([{"event": "gate", "action": "pass", "tier": "tier1"}] * 7
-                + [{"event": "gate", "action": "inject", "tier": "tier1"}] * 2
+                + [{"event": "gate", "action": "inject", "tier": "tier1",
+                    "style": "coach"}] * 2
                 + [{"event": "gate", "action": "block", "tier": "tier1"}] * 1)
         log.write_text("\n".join(json.dumps(r) for r in recs) + "\n",
                        encoding="utf-8")
@@ -100,6 +101,21 @@ class StatsShare(unittest.TestCase):
         self.assertIn("via claude-prompt-lint", out)
         # share-only must be a single line, not the full report.
         self.assertEqual(len(out.strip().splitlines()), 1)
+
+    def test_full_report_surfaces_coached_count(self):
+        d = Path(tempfile.mkdtemp())
+        log = d / "log.jsonl"
+        recs = ([{"event": "gate", "action": "inject", "tier": "tier1",
+                  "style": "coach"}] * 3
+                + [{"event": "gate", "action": "inject", "tier": "tier1",
+                    "style": "note"}] * 1)
+        log.write_text("\n".join(json.dumps(r) for r in recs) + "\n",
+                       encoding="utf-8")
+        ctx = Context(prompt="", args="", config={}, event="command",
+                      log_path=log)
+        out = stats_skill.run(ctx).payload
+        # 3 of the 4 warns coached the assistant.
+        self.assertIn("coached the assistant: 3", out)
 
 
 if __name__ == "__main__":

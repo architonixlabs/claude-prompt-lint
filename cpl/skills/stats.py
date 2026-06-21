@@ -61,6 +61,11 @@ def run(ctx: Context) -> Result:
     passed = actions.get("pass", 0)
     flagged = blocked + warned
 
+    # How often the warn note actually coached the assistant (vs. the classic
+    # user-facing "note" style) — the provable signal for the coach bet.
+    coached = sum(1 for r in records
+                  if r.get("action") == "inject" and r.get("style") == "coach")
+
     est_tokens = blocked * _TOKENS_PER_BLOCK + warned * _TOKENS_PER_WARN
 
     if share_only:
@@ -74,7 +79,7 @@ def run(ctx: Context) -> Result:
         "",
         f"  Prompts seen      : {total}",
         f"  Passed            : {passed}",
-        f"  Flagged (warn)    : {warned}",
+        f"  Flagged (warn)    : {warned}  (coached the assistant: {coached})",
         f"  Blocked           : {blocked}",
         "",
         f"  Flag rate         : {(flagged / total * 100):.1f}%"

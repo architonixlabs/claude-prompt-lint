@@ -90,6 +90,9 @@ def _log(ctx: Context, action: str, score: int, tier: str, issues,
             "score": score,
             "tier": tier,
             "mode": ctx.config.get("mode", "warn"),
+            # Which warn-mode voice spoke — lets stats prove how often the
+            # coach-the-assistant path actually fired. Metadata only.
+            "style": ctx.config.get("feedback_style", "coach"),
             "prompt_len": len(ctx.prompt.strip()),
             "issue_count": len(issues),
             # Stable category tags (not the prompt text) for the profile skill.
