@@ -106,11 +106,30 @@ _BUILD_INTENT_RE = re.compile(
 
 # Informational questions ("how does X work?", "what is Y?") are not change
 # requests — we shouldn't push acceptance-criteria feedback at them.
+# NOTE: do/does/did are deliberately excluded here — leading "do" is far more
+# often imperative ("do a full review", "do the migration") than interrogative.
+# Do-support questions are matched separately below, requiring a subject pronoun.
 _QUESTION_RE = re.compile(
     r"^\s*(how|what|why|when|where|who|which|can|could|would|should|is|are|"
-    r"does|do|did|will|explain|describe|tell me)\b",
+    r"will|explain|describe|tell me)\b",
     re.IGNORECASE,
 )
+
+# Do-support questions: "do you...", "does it...", "did the build fail". Only an
+# auxiliary do/does/did *with a subject* is interrogative; "do a review" is not.
+_DO_QUESTION_RE = re.compile(
+    r"^\s*(do|does|did)\s+(you|we|i|they|he|she|it|one)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_question(text: str) -> bool:
+    """True for information-seeking prompts that need no anchor."""
+    return bool(
+        _QUESTION_RE.match(text)
+        or _DO_QUESTION_RE.match(text)
+        or text.rstrip().endswith("?")
+    )
 
 
 def _word_count(text: str) -> int:
@@ -160,7 +179,7 @@ def evaluate(text: str) -> RuleResult:
     words = _word_count(stripped)
     res.anchors = count_anchors(stripped)
     has_intent = bool(_BUILD_INTENT_RE.search(stripped))
-    is_question = bool(_QUESTION_RE.match(stripped))
+    is_question = _is_question(stripped)
 
     # Rule: dangling pronoun with a change verb and no anchor.
     if _DANGLING_RE.search(stripped) and res.anchors == 0:

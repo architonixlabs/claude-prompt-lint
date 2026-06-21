@@ -20,7 +20,7 @@ os.environ.setdefault("CLAUDE_PLUGIN_ROOT", str(_ROOT))
 
 from cpl.registry import Context  # noqa: E402
 from cpl.skills import gate, scope, stats  # noqa: E402
-from cpl.shared import log  # noqa: E402
+from cpl.shared import log, rules  # noqa: E402
 
 
 def _load(name):
@@ -103,6 +103,31 @@ class Issue4LogBounding(unittest.TestCase):
         finally:
             log._MAX_BYTES, log._KEEP_RECORDS = old_max, old_keep
             p.unlink()
+
+
+class Issue5ImperativeDoNotAQuestion(unittest.TestCase):
+    """Leading 'do' is imperative ('do a full review'), not a question.
+
+    Regression: such prompts were exempted from the no-anchor penalty as if
+    they were information-seeking questions, so vague 'do X across the whole
+    codebase' asks slipped through the gate (eval false negative).
+    """
+
+    def test_imperative_do_is_flagged(self):
+        r = rules.evaluate(
+            "do a full review and improve whatever needs improving "
+            "across the entire codebase"
+        )
+        self.assertFalse(rules._is_question(
+            "do a full review and improve whatever needs improving"))
+        self.assertIn("no_anchor", r.categories)
+        self.assertGreaterEqual(r.penalty, gate._STRONG_FAIL_MIN)
+
+    def test_do_support_question_still_exempt(self):
+        # Genuine do-support questions keep their question exemption.
+        self.assertTrue(rules._is_question("do you handle expired tokens"))
+        self.assertTrue(rules._is_question("does it retry on a 500"))
+        self.assertTrue(rules._is_question("did the build pass?"))
 
 
 if __name__ == "__main__":
