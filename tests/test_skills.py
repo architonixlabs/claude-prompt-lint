@@ -95,7 +95,10 @@ class DispatcherRouting(unittest.TestCase):
         out = []
         dispatcher._write = lambda t: (out.append(t) or 0)
         dispatcher.handle_command("", "", self.cfg)
-        self.assertIn("lint your prompt", out[0].lower())
+        # Help leads with the v1.6 positioning (the interception point), and
+        # still lists commands + usage.
+        self.assertIn("before a prompt leaves", out[0].lower())
+        self.assertIn("commands", out[0].lower())
 
     def test_command_args_preserves_skill_flags(self):
         # Regression: argparse used to divert `--quick` into 'unknown' and drop

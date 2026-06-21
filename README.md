@@ -220,6 +220,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 |-----|---------|---------|
 | `enabled` | `true` | Master switch. Set `false` to turn cpl off entirely without uninstalling. |
 | `mode` | `warn` | `warn` (inject a note, let it proceed) or `block` (erase + show feedback). |
+| `feedback_style` | `coach` | In warn mode: `coach` (brief the assistant to confirm the missing piece or proceed on a stated assumption) or `note` (the classic user-facing quality note). |
 | `bypass_prefix` | `!!` | Prefix that skips the gate for a single prompt. |
 | `min_length_skip` | `40` | Prompts shorter than this many chars are never gated. |
 | `block_threshold` | `50` | Tier 2 score (0–100) at or above which the model's verdict flags a prompt. |

@@ -17,7 +17,10 @@ project adheres to [Semantic Versioning](https://semver.org/).
   The injected note briefs Claude on what's thin and tells it to confirm the
   missing piece in *one* question or proceed on a stated assumption — bounded so
   it works *with* an increasingly capable agent rather than nagging. No change to
-  the pass/flag decision (eval FPR/FNR unchanged at 0%/0%).
+  the pass/flag decision (eval FPR/FNR unchanged at 0%/0%). New config
+  `feedback_style` (`coach` default, or `note` for the classic user-facing
+  nudge) makes this a choice, not a forced behavior.
+- **`/cpl help` and the manifests** now lead with the repositioned one-liner.
 - **Gate (block mode) offers a fix.** The block message now points at
   `/cpl rewrite` to tighten the prompt, alongside the existing `!!` bypass.
 

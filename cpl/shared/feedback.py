@@ -61,20 +61,34 @@ def format_block(
 
 
 def format_warn_inject(
-    score: int, issues: List[str], suggestions: List[str]
+    score: int,
+    issues: List[str],
+    suggestions: List[str],
+    style: str = "coach",
 ) -> str:
-    """Coach the assistant (warn mode injects this into context; prompt proceeds).
+    """Warn-mode text appended to context (prompt proceeds either way).
 
-    The old wording scolded the *user* ("your prompt is weak"), which is
-    ignorable at best and nagging at worst. This text instead briefs the
-    *assistant* on what's thin and how to handle it gracefully — confirm the
-    missing piece in one line, or proceed on a stated assumption. It is
-    deliberately bounded ("one question at most — don't stall") so it works
-    with an increasingly capable agent rather than turning it into an
-    interrogator. Only fires when the gate already flagged the prompt.
+    Two styles, selected by config `feedback_style`:
+
+    * ``"coach"`` (default) — briefs the *assistant* on what's thin and how to
+      handle it gracefully: confirm the missing piece in one line, or proceed on
+      a stated assumption. Deliberately bounded ("one question at most — don't
+      stall") so it works *with* an increasingly capable agent rather than
+      turning it into an interrogator.
+    * ``"note"`` — the pre-1.6 behavior: a short user-facing quality note. Kept
+      as an opt-out for anyone who wants the classic nudge instead of coaching
+      the model. Either way this only fires when the gate already flagged.
     """
     issues = _dedupe(issues)
     top = issues[0] if issues else "the prompt may be under-specified"
+
+    if style == "note":
+        hint = ""
+        sugg = _dedupe(suggestions)
+        if sugg:
+            hint = f" Suggestion: {sugg[0]}"
+        return f"[{_BRAND}] Prompt quality note (score {score}/100): {top}.{hint}"
+
     return (
         f"[{_BRAND}] Note for the assistant — the user's prompt scored "
         f"{score}/100 on local prompt-quality checks ({top}). Before any large "

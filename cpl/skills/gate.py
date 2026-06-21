@@ -64,8 +64,10 @@ def _verdict_to_result(
             meta={"tier": tier, "mode": mode},
         )
 
-    # warn mode: inject a short note, prompt still proceeds.
-    payload = feedback.format_warn_inject(score, issues, suggestions)
+    # warn mode: inject coaching for the assistant (or the classic user note),
+    # prompt still proceeds. `feedback_style` selects which; default "coach".
+    style = cfg.get("feedback_style", "coach")
+    payload = feedback.format_warn_inject(score, issues, suggestions, style=style)
     return Result(
         action="inject",
         payload=payload,
