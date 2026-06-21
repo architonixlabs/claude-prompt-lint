@@ -199,6 +199,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 {
   "enabled": true,
   "mode": "warn",
+  "feedback_style": "coach",
   "bypass_prefix": "!!",
   "min_length_skip": 40,
   "block_threshold": 50,
@@ -210,8 +211,9 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
   "log_path": "~/.cpl/prompts.log.jsonl",
   "debug_log": false,
   "skills": {
-    "gate": true, "rewrite": true, "stats": true, "explain": true,
-    "profile": true, "expand": true, "scope": true, "template": true
+    "mask": true, "gate": true, "rewrite": true, "stats": true,
+    "explain": true, "profile": true, "expand": true, "scope": true,
+    "template": true, "init": true
   }
 }
 ```
