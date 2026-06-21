@@ -1,7 +1,7 @@
 {
   "name": "claude-prompt-lint",
-  "version": "1.5.0",
-  "description": "Lint your prompt before you spend the token. A local-first prompt-quality gate for Claude Code that blocks weak prompts pre-send using fast local rules and an optional local model.",
+  "version": "1.6.0",
+  "description": "The last thing that runs on your machine before a prompt leaves it. Local-first for Claude Code: catch secrets before they're sent, keep your repo legible to Claude (refresh-aware /cpl init), and tighten weak prompts as an offer, not a scold.",
   "author": {
     "name": "Ram Chandra Samal",
     "email": "rcsamal@gmail.com",

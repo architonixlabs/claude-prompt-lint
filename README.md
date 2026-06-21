@@ -1,25 +1,45 @@
 # claude-prompt-lint (`/cpl`)
 
-> **Lint your prompt before you spend the token.**
+> **The last thing that runs on your machine before a prompt leaves it.**
 
-A local-first prompt-quality toolkit for [Claude Code](https://claude.com/claude-code).
-It intercepts your prompt the moment you hit enter, evaluates it **on your own
-machine**, and flags weak prompts with actionable feedback — *before* any API
-tokens are spent on a clarification round-trip.
+`cpl` sits at the one privileged spot in your workflow: the instant you hit enter,
+on your own machine, with full repo context — **before a single token is spent and
+before any data leaves your laptop** — and it does that for free. It uses that spot
+for the things every Claude Code repo actually needs, and stays out of your way
+otherwise.
 
 Built by **Ram Chandra Samal** · Architonix Labs LLP.
 
 ---
 
-## Why
+## What it does
 
-Vague, under-specified prompts cost you twice: the model asks a clarifying
-question, then you re-send. That round-trip is paid in tokens *after* you hit
-enter — too late. `cpl` moves the check **before** send, and runs it locally so
-the checker itself costs **zero API tokens**.
+**1. Never leak a secret.** Every prompt is scanned locally before it leaves your
+machine. An API key, token, private key, or DB connection string is caught *here* —
+the last checkpoint — and handed back to you **already masked**, ready to resend.
+The key never reaches the API. *(Caught at the prompt boundary; it is not a
+repo-wide secret scanner — see [Notes & limitations](#notes--limitations).)*
+
+**2. Keep your repo legible to Claude.** `/cpl init` writes a concise, cpl-managed
+project summary into your `CLAUDE.md` so Claude starts every session knowing your
+stack, commands, and layout — at zero per-turn token cost. It is **refresh-aware**:
+re-run it and cpl tells you whether your repo has *drifted* from the recorded
+context or is still up to date — the freshness signal a one-shot generator doesn't
+give you.
+
+**3. Tighten the ask — as an offer, not a scold.** The same local engine that
+grades a prompt doesn't lecture you. On a vague, anchor-free prompt it either points
+you at `/cpl rewrite` to tighten it, or **coaches Claude to ask the one question
+that's missing** — working *with* the model's planning instead of nagging you.
+Lenient by default; the hard gate is opt-in.
+
+Built for people who feel these as real pain, not nice-to-haves:
+**compliance-sensitive teams** who can't let a key cross the wire, **API-metered
+heavy users** paying for every clarification round-trip, and **anyone deliberately
+leveling up their prompt discipline**.
 
 ```
-"fix it"  →  ⚠️  cpl: no concrete anchor — name the file/function/error.
+"fix it"  →  cpl: no anchor — I'll have Claude confirm the target, or run /cpl rewrite.
 ```
 
 ## How it works

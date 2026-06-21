@@ -52,8 +52,10 @@ def format_block(
             lines.append(f"  → {sg}")
         lines.append("")
 
+    # Offer a fix, don't just scold: point at the tool that tightens it for you.
+    lines.append("Tighten it for me: `/cpl rewrite <your prompt>`")
     lines.append(
-        f"Send anyway: prefix your prompt with `{bypass_prefix}` to bypass the gate."
+        f"Send as-is: prefix your prompt with `{bypass_prefix}` to bypass the gate."
     )
     return "\n".join(lines).rstrip()
 
@@ -61,14 +63,26 @@ def format_block(
 def format_warn_inject(
     score: int, issues: List[str], suggestions: List[str]
 ) -> str:
-    """Compact note appended to context in warn mode (proceeds either way)."""
+    """Coach the assistant (warn mode injects this into context; prompt proceeds).
+
+    The old wording scolded the *user* ("your prompt is weak"), which is
+    ignorable at best and nagging at worst. This text instead briefs the
+    *assistant* on what's thin and how to handle it gracefully — confirm the
+    missing piece in one line, or proceed on a stated assumption. It is
+    deliberately bounded ("one question at most — don't stall") so it works
+    with an increasingly capable agent rather than turning it into an
+    interrogator. Only fires when the gate already flagged the prompt.
+    """
     issues = _dedupe(issues)
-    top = issues[0] if issues else "prompt may be under-specified"
-    hint = ""
-    sugg = _dedupe(suggestions)
-    if sugg:
-        hint = f" Suggestion: {sugg[0]}"
-    return f"[{_BRAND}] Prompt quality note (score {score}/100): {top}.{hint}"
+    top = issues[0] if issues else "the prompt may be under-specified"
+    return (
+        f"[{_BRAND}] Note for the assistant — the user's prompt scored "
+        f"{score}/100 on local prompt-quality checks ({top}). Before any large "
+        f"or irreversible change, confirm the specific target (file, symbol, or "
+        f"expected outcome) in one short question, or proceed and state the "
+        f"assumption you're acting on. At most one clarifying question — "
+        f"don't stall on a workable prompt."
+    )
 
 
 def format_mask_block(findings, masked_prompt: str) -> str:
