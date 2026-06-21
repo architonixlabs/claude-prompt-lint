@@ -175,10 +175,11 @@ def handle_command(command: str, args: str, cfg) -> int:
         bypass = cfg.get("bypass_prefix", "!!")
         model = "on" if cfg.get("use_model", False) else "off"
         return _emit_message(
-            "cpl — lint your prompt before you spend the token.\n"
+            "cpl — the last thing that runs on your machine before a prompt leaves it.\n"
             "\n"
-            "The gate checks each prompt locally (no API tokens) and flags weak\n"
-            "ones before you send. Most prompts pass instantly.\n"
+            "Locally, before any token is spent or data leaves your machine: catch\n"
+            "secrets, keep your repo legible to Claude (/cpl init), and tighten weak\n"
+            "prompts as an offer, not a scold. Most prompts pass instantly.\n"
             "\n"
             f"  Status   : gate {'enabled' if enabled else 'DISABLED'}, "
             f"mode={mode}, model tier {model}\n"

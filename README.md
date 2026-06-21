@@ -1,25 +1,45 @@
 # claude-prompt-lint (`/cpl`)
 
-> **Lint your prompt before you spend the token.**
+> **The last thing that runs on your machine before a prompt leaves it.**
 
-A local-first prompt-quality toolkit for [Claude Code](https://claude.com/claude-code).
-It intercepts your prompt the moment you hit enter, evaluates it **on your own
-machine**, and flags weak prompts with actionable feedback — *before* any API
-tokens are spent on a clarification round-trip.
+`cpl` sits at the one privileged spot in your workflow: the instant you hit enter,
+on your own machine, with full repo context — **before a single token is spent and
+before any data leaves your laptop** — and it does that for free. It uses that spot
+for the things every Claude Code repo actually needs, and stays out of your way
+otherwise.
 
 Built by **Ram Chandra Samal** · Architonix Labs LLP.
 
 ---
 
-## Why
+## What it does
 
-Vague, under-specified prompts cost you twice: the model asks a clarifying
-question, then you re-send. That round-trip is paid in tokens *after* you hit
-enter — too late. `cpl` moves the check **before** send, and runs it locally so
-the checker itself costs **zero API tokens**.
+**1. Never leak a secret.** Every prompt is scanned locally before it leaves your
+machine. An API key, token, private key, or DB connection string is caught *here* —
+the last checkpoint — and handed back to you **already masked**, ready to resend.
+The key never reaches the API. *(Caught at the prompt boundary; it is not a
+repo-wide secret scanner — see [Notes & limitations](#notes--limitations).)*
+
+**2. Keep your repo legible to Claude.** `/cpl init` writes a concise, cpl-managed
+project summary into your `CLAUDE.md` so Claude starts every session knowing your
+stack, commands, and layout — at zero per-turn token cost. It is **refresh-aware**:
+re-run it and cpl tells you whether your repo has *drifted* from the recorded
+context or is still up to date — the freshness signal a one-shot generator doesn't
+give you.
+
+**3. Tighten the ask — as an offer, not a scold.** The same local engine that
+grades a prompt doesn't lecture you. On a vague, anchor-free prompt it either points
+you at `/cpl rewrite` to tighten it, or **coaches Claude to ask the one question
+that's missing** — working *with* the model's planning instead of nagging you.
+Lenient by default; the hard gate is opt-in.
+
+Built for people who feel these as real pain, not nice-to-haves:
+**compliance-sensitive teams** who can't let a key cross the wire, **API-metered
+heavy users** paying for every clarification round-trip, and **anyone deliberately
+leveling up their prompt discipline**.
 
 ```
-"fix it"  →  ⚠️  cpl: no concrete anchor — name the file/function/error.
+"fix it"  →  cpl: no anchor — I'll have Claude confirm the target, or run /cpl rewrite.
 ```
 
 ## How it works
@@ -179,6 +199,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 {
   "enabled": true,
   "mode": "warn",
+  "feedback_style": "coach",
   "bypass_prefix": "!!",
   "min_length_skip": 40,
   "block_threshold": 50,
@@ -190,8 +211,9 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
   "log_path": "~/.cpl/prompts.log.jsonl",
   "debug_log": false,
   "skills": {
-    "gate": true, "rewrite": true, "stats": true, "explain": true,
-    "profile": true, "expand": true, "scope": true, "template": true
+    "mask": true, "gate": true, "rewrite": true, "stats": true,
+    "explain": true, "profile": true, "expand": true, "scope": true,
+    "template": true, "init": true
   }
 }
 ```
@@ -200,6 +222,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 |-----|---------|---------|
 | `enabled` | `true` | Master switch. Set `false` to turn cpl off entirely without uninstalling. |
 | `mode` | `warn` | `warn` (inject a note, let it proceed) or `block` (erase + show feedback). |
+| `feedback_style` | `coach` | In warn mode: `coach` (brief the assistant to confirm the missing piece or proceed on a stated assumption) or `note` (the classic user-facing quality note). |
 | `bypass_prefix` | `!!` | Prefix that skips the gate for a single prompt. |
 | `min_length_skip` | `40` | Prompts shorter than this many chars are never gated. |
 | `block_threshold` | `50` | Tier 2 score (0–100) at or above which the model's verdict flags a prompt. |
@@ -288,6 +311,38 @@ ambiguous, anchor-free cases.
 Re-run with the model: `python eval/run_eval.py --use-model` (needs Ollama).
 
 ---
+
+## Docker (dev)
+
+cpl is a Claude Code *plugin*, not a network service — so the image doesn't run a
+server. It's a Linux dev/self-check image: it builds, runs the test suite + gate
+eval, and lets you exercise the dispatcher CLI on Linux. Pure standard library;
+the only dependency is Python.
+
+```bash
+docker build -t claude-prompt-lint-dev .
+docker run --rm claude-prompt-lint-dev                 # self-check: tests + eval (exits non-zero if FPR != 0%)
+docker run --rm claude-prompt-lint-dev python hooks/dispatcher.py --command help
+echo '{"prompt":"fix it"}' | docker run --rm -i claude-prompt-lint-dev \
+  python hooks/dispatcher.py --event UserPromptSubmit
+```
+
+Or via compose:
+
+```bash
+docker compose run --rm cpl-dev                         # build + self-check
+```
+
+**Optional Tier-2 model demo** (pulls ~2 GB the first time):
+
+```bash
+docker compose --profile model up -d ollama
+docker compose exec ollama ollama pull qwen2.5:3b-instruct
+```
+
+Then point cpl at it by mounting a config that sets `"use_model": true` and
+`"model_endpoint": "http://ollama:11434/api/generate"` (via `$CPL_CONFIG` or a
+bind-mounted `~/.cpl/config.json`).
 
 ## Architecture
 

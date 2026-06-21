@@ -64,8 +64,10 @@ def _verdict_to_result(
             meta={"tier": tier, "mode": mode},
         )
 
-    # warn mode: inject a short note, prompt still proceeds.
-    payload = feedback.format_warn_inject(score, issues, suggestions)
+    # warn mode: inject coaching for the assistant (or the classic user note),
+    # prompt still proceeds. `feedback_style` selects which; default "coach".
+    style = cfg.get("feedback_style", "coach")
+    payload = feedback.format_warn_inject(score, issues, suggestions, style=style)
     return Result(
         action="inject",
         payload=payload,
@@ -88,6 +90,9 @@ def _log(ctx: Context, action: str, score: int, tier: str, issues,
             "score": score,
             "tier": tier,
             "mode": ctx.config.get("mode", "warn"),
+            # Which warn-mode voice spoke — lets stats prove how often the
+            # coach-the-assistant path actually fired. Metadata only.
+            "style": ctx.config.get("feedback_style", "coach"),
             "prompt_len": len(ctx.prompt.strip()),
             "issue_count": len(issues),
             # Stable category tags (not the prompt text) for the profile skill.

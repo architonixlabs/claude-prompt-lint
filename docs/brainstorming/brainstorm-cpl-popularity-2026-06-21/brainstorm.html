@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cpl — Diagnostics &amp; Fixes · Brainstorm Keepsake</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#161b22;
+    --panel-2:#1c2330;
+    --line:#2b333f;
+    --line-soft:#222a35;
+    --fg:#e6edf3;
+    --fg-dim:#9aa7b5;
+    --fg-faint:#6b7785;
+    --accent:#58a6ff;
+    --green:#3fb950;
+    --green-soft:rgba(63,185,80,.14);
+    --yellow:#d29922;
+    --yellow-soft:rgba(210,153,34,.14);
+    --red:#f85149;
+    --red-soft:rgba(248,81,73,.14);
+    --purple:#bc8cff;
+    --cyan:#39c5cf;
+    --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--fg);
+    font-family:var(--sans);line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(900px 500px at 85% -10%,rgba(88,166,255,.07),transparent),
+      radial-gradient(700px 500px at -5% 10%,rgba(188,140,255,.06),transparent);
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  a{color:var(--accent);text-decoration:none}
+
+  /* ---------- window chrome ---------- */
+  .chrome{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel);border-radius:10px 10px 0 0}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .chrome .tab{margin-left:14px;font-family:var(--mono);font-size:12.5px;color:var(--fg-dim);
+    background:var(--panel-2);padding:4px 12px;border-radius:6px 6px 0 0;border:1px solid var(--line);border-bottom:none}
+  .chrome .path{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--fg-faint)}
+
+  /* ---------- header ---------- */
+  header.hero{
+    border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px;
+    background:linear-gradient(180deg,#10151d,#0d1117);
+    padding:30px 30px 34px;position:relative;overflow:hidden;
+  }
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px}
+  .kicker .blink{color:var(--green)}
+  h1.title{font-size:clamp(26px,4.4vw,40px);line-height:1.12;margin:0 0 6px;font-weight:700;letter-spacing:-.02em}
+  h1.title .cmd{font-family:var(--mono);color:var(--accent)}
+  .subtitle{color:var(--fg-dim);font-size:15.5px;max-width:62ch;margin:6px 0 22px}
+  /* squiggle motif */
+  .squig{display:inline;background-image:linear-gradient(135deg,transparent 0,transparent 30%,var(--yellow) 30%,var(--yellow) 50%,transparent 50%,transparent 80%,var(--yellow) 80%);background-size:8px 4px;background-repeat:repeat-x;background-position:0 100%;padding-bottom:3px}
+  .squig.err{background-image:linear-gradient(135deg,transparent 0,transparent 30%,var(--red) 30%,var(--red) 50%,transparent 50%,transparent 80%,var(--red) 80%)}
+
+  .diagnosis-card{
+    margin-top:8px;border:1px solid var(--line);border-left:3px solid var(--red);
+    background:var(--panel);border-radius:8px;padding:16px 18px;font-family:var(--mono);font-size:13.5px;
+  }
+  .diagnosis-card .lbl{color:var(--red);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:11.5px}
+  .diagnosis-card p{margin:8px 0 0;color:var(--fg);line-height:1.5;font-family:var(--sans);font-size:15px}
+
+  /* ---------- summary chips ---------- */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{font-family:var(--mono);font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg-dim);display:flex;align-items:center;gap:7px}
+  .chip b{color:var(--fg)}
+  .chip .sq{width:9px;height:9px;border-radius:50%}
+  .chip .sq.e{background:var(--red)}.chip .sq.w{background:var(--yellow)}.chip .sq.f{background:var(--green)}.chip .sq.i{background:var(--purple)}
+
+  /* ---------- sections ---------- */
+  section{margin:54px 0}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .sec-head h2{font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);margin:0;font-weight:600}
+  .sec-head .count{font-family:var(--mono);font-size:12px;color:var(--fg-faint)}
+  .sec-sub{color:var(--fg-faint);font-size:14px;margin:0 0 24px;max-width:64ch}
+
+  /* lens grouping */
+  .lens{margin:26px 0}
+  .lens-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;
+    padding:4px 11px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg-dim);margin-bottom:12px}
+  .lens-tag .ic{font-size:13px}
+  .lens-tag b{color:var(--accent)}
+
+  /* diagnostics panel rows */
+  .panel{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+  .diag{display:flex;gap:13px;padding:13px 16px;border-bottom:1px solid var(--line-soft);align-items:flex-start}
+  .diag:last-child{border-bottom:none}
+  .diag:hover{background:var(--panel-2)}
+  .sev{flex:none;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.05em;
+    padding:3px 8px;border-radius:5px;text-transform:uppercase;margin-top:1px;min-width:62px;text-align:center}
+  .sev.error{color:var(--red);background:var(--red-soft);border:1px solid rgba(248,81,73,.3)}
+  .sev.warn{color:var(--yellow);background:var(--yellow-soft);border:1px solid rgba(210,153,34,.3)}
+  .sev.info{color:var(--purple);background:rgba(188,140,255,.14);border:1px solid rgba(188,140,255,.3)}
+  .diag .body{flex:1;min-width:0}
+  .diag .msg{font-size:14.5px;color:var(--fg)}
+  .diag .rule{font-family:var(--mono);font-size:11.5px;color:var(--fg-faint);margin-top:4px}
+  .diag .rule .code{color:var(--cyan)}
+
+  /* ---------- fixes ---------- */
+  .fix{border:1px solid var(--line);border-left:3px solid var(--green);border-radius:8px;background:var(--panel);
+    padding:15px 17px;margin-bottom:14px}
+  .fix-top{display:flex;align-items:center;gap:11px;margin-bottom:9px;flex-wrap:wrap}
+  .fixbtn{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--green);background:var(--green-soft);
+    border:1px solid rgba(63,185,80,.35);border-radius:5px;padding:3px 10px;display:inline-flex;align-items:center;gap:6px}
+  .fixbtn::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+  .fix-lens{font-family:var(--mono);font-size:11px;color:var(--fg-faint);margin-left:auto}
+  .fix h3{margin:0;font-size:15.5px;font-weight:650;color:var(--fg);letter-spacing:-.01em}
+  .fix p{margin:7px 0 0;color:var(--fg-dim);font-size:14px}
+
+  /* diff card */
+  .diff{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:14px 0 0}
+  .diff .dh{background:var(--panel-2);padding:6px 13px;color:var(--fg-faint);font-size:11px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+  .diff .ln{padding:5px 13px;display:flex;gap:10px;white-space:pre-wrap}
+  .diff .ln.del{background:var(--red-soft);color:#ffb3ad}
+  .diff .ln.add{background:var(--green-soft);color:#9be8a8}
+  .diff .ln .mk{flex:none;width:12px;color:var(--fg-faint)}
+  .diff .ln.del .mk{color:var(--red)}.diff .ln.add .mk{color:var(--green)}
+
+  /* ---------- synthesis ---------- */
+  .synth{border:1px solid var(--line);border-radius:14px;background:
+      radial-gradient(700px 360px at 80% -20%,rgba(88,166,255,.10),transparent),
+      linear-gradient(180deg,#11161f,#0e131b);padding:6px;overflow:hidden}
+  .synth-inner{padding:30px 30px 34px}
+  .synth .badge{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);display:flex;align-items:center;gap:9px;margin-bottom:20px}
+  .synth .badge::before{content:"✓";display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--green-soft);border:1px solid rgba(63,185,80,.4);color:var(--green);font-size:12px}
+
+  .synth-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .scard{border:1px solid var(--line);border-radius:10px;background:rgba(13,17,23,.6);padding:18px 19px}
+  .scard.full{grid-column:1 / -1}
+  .scard .h{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+  .scard.diag-h .h{color:var(--red)}
+  .scard.syn-h .h{color:var(--accent)}
+  .scard.wild-h .h{color:var(--purple)}
+  .scard .h .pip{width:8px;height:8px;border-radius:2px}
+  .scard.diag-h .pip{background:var(--red)}
+  .scard.syn-h .pip{background:var(--accent)}
+  .scard.wild-h .pip{background:var(--purple)}
+  .scard p{margin:0;font-size:14.5px;color:var(--fg);line-height:1.55}
+  .scard .eq{font-family:var(--mono);font-size:12px;color:var(--cyan);margin-top:11px;line-height:1.7}
+
+  .move{grid-column:1 / -1;border:1px solid rgba(63,185,80,.4);border-radius:10px;
+    background:linear-gradient(180deg,rgba(63,185,80,.10),rgba(63,185,80,.03));padding:22px 22px}
+  .move .h{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:10px}
+  .move .big{font-size:19px;font-weight:680;line-height:1.4;letter-spacing:-.01em}
+  .move .big .hl{color:var(--green)}
+  .move .demote{font-family:var(--mono);font-size:12.5px;color:var(--fg-dim);margin-top:12px}
+  .move .demote .x{color:var(--red)}
+
+  /* ---------- footer ---------- */
+  footer{margin:60px 0 50px;border-top:1px solid var(--line);padding-top:20px;
+    font-family:var(--mono);font-size:12px;color:var(--fg-faint);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+  footer .ok{color:var(--green)}
+  footer .sep{color:var(--line)}
+
+  @media(max-width:680px){
+    .synth-grid{grid-template-columns:1fr}
+    .chrome .path{display:none}
+    header.hero,.synth-inner{padding-left:20px;padding-right:20px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== window chrome + header ===== -->
+  <div class="chrome">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="tab">cpl-popularity · diagnostics</span>
+    <span class="path">~/brainstorm/cpl-popularity-2026-06-21</span>
+  </div>
+
+  <header class="hero">
+    <div class="kicker">brainstorm keepsake <span class="blink">●</span> ideate-for-me · 8 technique lenses</div>
+    <h1 class="title">Why <span class="cmd">cpl</span> isn't catching on —<br>and what it would take to <span class="squig">go popular</span></h1>
+    <p class="subtitle">A pre-mortem on a local-first prompt linter for Claude Code. The verdict isn't about the code. It's about where the tool decided to stand.</p>
+
+    <div class="diagnosis-card">
+      <span class="lbl">core diagnosis · 1 finding</span>
+      <p>The code is excellent; the product is <span class="squig err">mis-positioned</span>. cpl leads with its weakest, most-annoying job (the quality <em>gate</em>) and buries its strongest felt jobs (secret-prevention, project-context). It also fights the platform trend instead of riding it.</p>
+    </div>
+
+    <div class="chips">
+      <span class="chip"><span class="sq e"></span><b>5</b> errors</span>
+      <span class="chip"><span class="sq w"></span><b>8</b> warnings</span>
+      <span class="chip"><span class="sq f"></span><b>9</b> quick-fixes</span>
+      <span class="chip"><span class="sq i"></span><b>4</b> synthesis insights</span>
+    </div>
+  </header>
+
+  <!-- ===== DIAGNOSTICS ===== -->
+  <section id="diagnostics">
+    <div class="sec-head">
+      <h2>Diagnostics</h2>
+      <span class="count">// failure modes, grouped by lens</span>
+    </div>
+    <p class="sec-sub">Each finding is a lint emitted by a technique lens. Severity reflects how directly it blocks adoption: <b>error</b> = structural / value-prop, <b>warn</b> = friction or risk, <b>info</b> = framing.</p>
+
+    <!-- Pre-Mortem -->
+    <div class="lens">
+      <span class="lens-tag"><span class="ic">⏳</span> lens: <b>Pre-Mortem</b> — it's 2027, cpl is dead, why?</span>
+      <div class="panel">
+        <div class="diag">
+          <span class="sev error">error</span>
+          <div class="body">
+            <div class="msg">Value prop targets a pain that's small <em>and</em> felt by a minority — "save clarification tokens" lands only for API-metered users; Max/Pro subscribers feel no per-token cost.</div>
+            <div class="rule"><span class="code">value/audience-too-narrow</span> · the people who feel the pain aren't the people who use the product</div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev warn">warn</span>
+          <div class="body">
+            <div class="msg">A clarification round-trip is cheap and fast — users don't experience it as painful enough to install a gate against it.</div>
+            <div class="rule"><span class="code">value/pain-below-threshold</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev error">error</span>
+          <div class="body">
+            <div class="msg">Invisible when it works: a linter that correctly passes 95% of prompts does nothing visible. The success state is silence — no aha-moment, no dopamine.</div>
+            <div class="rule"><span class="code">ux/success-is-invisible</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev error">error</span>
+          <div class="body">
+            <div class="msg">Caught between two failure modes: lenient default = invisible = no value; stricter = nags power users who disable it in a day. The README admits this fear.</div>
+            <div class="rule"><span class="code">design/lose-lose-default</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev warn">warn</span>
+          <div class="body">
+            <div class="msg">Adoption friction is inverse to value: the strong tier (local model) needs Ollama + a 2GB pull + serve + config edit; the weak tier (rules) is the zero-config path.</div>
+            <div class="rule"><span class="code">install/friction-inverse-to-value</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev warn">warn</span>
+          <div class="body">
+            <div class="msg">The hook lives in the prompt hot path, and the README warns the Claude Code hook contract shifts across versions — a maintenance treadmill and a trust risk for poor reward.</div>
+            <div class="rule"><span class="code">risk/hot-path-maintenance-treadmill</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform-Trend -->
+    <div class="lens">
+      <span class="lens-tag"><span class="ic">📈</span> lens: <b>Platform-Trend / existential check</b></span>
+      <div class="panel">
+        <div class="diag">
+          <span class="sev error">error</span>
+          <div class="body">
+            <div class="msg">The platform <em>is</em> the competitor. Claude Code increasingly plans and asks good clarifying questions; as models improve, the marginal value of pre-linting a human prompt shrinks. The tool fights the trend line.</div>
+            <div class="rule"><span class="code">strategy/against-the-trend</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JTBD -->
+    <div class="lens">
+      <span class="lens-tag"><span class="ic">🎯</span> lens: <b>Jobs-to-be-Done</b> — what job is the user hiring it for?</span>
+      <div class="panel">
+        <div class="diag">
+          <span class="sev info">insight</span>
+          <div class="body">
+            <div class="msg">The hero feature (quality gate) is the weakest-value, most-annoying job. The strongest felt jobs are buried side features: <b>mask</b> (stop a secret leak) and <b>init</b> (keep repo context fresh for Claude).</div>
+            <div class="rule"><span class="code">jtbd/hero-is-the-wrong-job</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev info">insight</span>
+          <div class="body">
+            <div class="msg">The <b>gate modality</b> is the mistake — rewrite/expand are genuinely valuable, but as on-demand commands, not as a hot-path gate.</div>
+            <div class="rule"><span class="code">jtbd/wrong-modality</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Positioning / naming -->
+    <div class="lens">
+      <span class="lens-tag"><span class="ic">🏷️</span> lens: <b>Positioning / naming critique</b></span>
+      <div class="panel">
+        <div class="diag">
+          <span class="sev warn">warn</span>
+          <div class="body">
+            <div class="msg">"prompt-<b>lint</b>" borrows ESLint's promise of deterministic, authoritative rules — but prompt quality is subjective and model-judged. The metaphor overpromises rigor and underdelivers.</div>
+            <div class="rule"><span class="code">naming/metaphor-overpromises</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev error">error</span>
+          <div class="body">
+            <div class="msg">10 surfaces — gate / rewrite / expand / explain / scope / profile / stats / template / mask / init — and <b>no hero</b>. Reads as a feature checklist, not one indispensable job.</div>
+            <div class="rule"><span class="code">positioning/no-hero</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Distribution / virality -->
+    <div class="lens">
+      <span class="lens-tag"><span class="ic">📡</span> lens: <b>Distribution / virality</b></span>
+      <div class="panel">
+        <div class="diag">
+          <span class="sev warn">warn</span>
+          <div class="body">
+            <div class="msg">Nothing shareable today — all <span class="cmd" style="font-family:var(--mono)">/cpl</span> value is private (your stats, your rewrites). There's no public artifact to spread it.</div>
+            <div class="rule"><span class="code">growth/no-shareable-surface</span></div>
+          </div>
+        </div>
+        <div class="diag">
+          <span class="sev warn">warn</span>
+          <div class="body">
+            <div class="msg">No frictionless try-before-install — value is locked behind a multi-step plugin install, so nobody experiences it first.</div>
+            <div class="rule"><span class="code">growth/no-try-before-install</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FIXES ===== -->
+  <section id="fixes">
+    <div class="sec-head">
+      <h2>Quick Fixes</h2>
+      <span class="count">// generative ideas → suggested fixes</span>
+    </div>
+    <p class="sec-sub">Each fix is an applicable move surfaced by First-Principles, Analogical, SCAMPER/Reverse, and Distribution lenses. Click <span class="fixbtn" style="display:inline-flex">fix it</span> mentally — these compose.</p>
+
+    <!-- First principles asset -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Use the privileged interception point for what it's worth</h3><span class="fix-lens">lens · First Principles</span></div>
+      <p>The <b>asset</b> is the position: the last checkpoint before tokens are spent and before data leaves the machine, with full repo context, for free. Quality-linting is a low-value use of that seat. Data-loss prevention + context injection are the high-value uses.</p>
+    </div>
+
+    <!-- Analogical -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Win like ESLint/Prettier/Grammarly did — fix or add, don't scold</h3><span class="fix-lens">lens · Analogical</span></div>
+      <p>ESLint/Prettier won via auto-<b>FIX</b>, not scolding. Grammarly won via constant visible, additive, accept-this suggestions. cpl's hero does neither — it warns and is ignorable. A hook can't silently rewrite the prompt in the hot path, so make <span class="cmd" style="font-family:var(--mono)">/cpl rewrite</span> the Grammarly-style hero — or coach Claude instead of the human.</p>
+    </div>
+
+    <!-- Reverse the target (wildcard preview) -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Reverse the target — coach Claude, not the human</h3><span class="fix-lens">lens · SCAMPER / Reverse</span></div>
+      <p>Instead of judging the user, inject guidance for <b>Claude</b>: "user prompt lacks X, ask about it." This works <em>with</em> the platform trend, not against it.</p>
+      <div class="diff">
+        <div class="dh"><span>cpl · interception behavior</span><span>reverse target</span></div>
+        <div class="ln del"><span class="mk">-</span>warn the human: "your prompt is vague — add acceptance criteria"</div>
+        <div class="ln add"><span class="mk">+</span>brief Claude: "prompt omits acceptance criteria — ask the user before acting"</div>
+      </div>
+    </div>
+
+    <!-- Eliminate gate default -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Eliminate the warn-mode auto-gate default</h3><span class="fix-lens">lens · SCAMPER / Eliminate</span></div>
+      <p>Make the gate opt-in, and lead with the strong jobs — safety + context.</p>
+    </div>
+
+    <!-- Combine init+mask -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Combine init + mask as "the two things every CC repo needs day one"</h3><span class="fix-lens">lens · SCAMPER / Combine</span></div>
+      <p>Reposition cpl from <span class="squig err">nanny</span> to day-one setup tool. <b>mask</b> = a real, scary, universal, felt pain (a leaked secret) — a far stronger install reason than "your prompt is vague." <b>init</b> (→ CLAUDE.md) is felt by everyone running Claude Code on a real repo, and grows <em>more</em> valuable as agents act autonomously.</p>
+    </div>
+
+    <!-- Magnify stats -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Magnify stats into a shareable artifact</h3><span class="fix-lens">lens · SCAMPER / Magnify</span></div>
+      <p>"Caught N secrets / saved $X this month" — a social-proof loop, and the only shareable surface cpl has.</p>
+    </div>
+
+    <!-- Put to other use -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Put the eval engine to other use — grade prompt templates in CI</h3><span class="fix-lens">lens · SCAMPER / Put-to-other-use</span></div>
+      <p>The local prompt-eval engine could grade a team's prompt templates in CI — a B2B / team angle beyond the solo dev.</p>
+    </div>
+
+    <!-- Public artifact -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Ship a public artifact</h3><span class="fix-lens">lens · Distribution</span></div>
+      <p>A before/after rewrite gallery, a repo prompt-hygiene badge, a no-install web playground to try the rewriter — give the value somewhere to spread.</p>
+    </div>
+
+    <!-- Try before install -->
+    <div class="fix">
+      <div class="fix-top"><span class="fixbtn">fix it</span><h3>Frictionless try-before-install</h3><span class="fix-lens">lens · Distribution</span></div>
+      <p>A hosted playground or npx-style one-shot of the rewriter, so people experience value <em>before</em> the multi-step plugin install.</p>
+    </div>
+  </section>
+
+  <!-- ===== SYNTHESIS ===== -->
+  <section id="synthesis">
+    <div class="sec-head">
+      <h2>Synthesis</h2>
+      <span class="count">// the climax — converge the lenses</span>
+    </div>
+
+    <div class="synth">
+      <div class="synth-inner">
+        <div class="badge">resolution · all lenses converge</div>
+
+        <div class="synth-grid">
+
+          <div class="scard diag-h full">
+            <div class="h"><span class="pip"></span>the core diagnosis</div>
+            <p>The code is excellent; the product is mis-positioned. cpl leads with its weakest, most-annoying job (the quality gate) and buries its strongest felt jobs (secret-prevention, project-context). It also fights the platform trend instead of riding it.</p>
+          </div>
+
+          <div class="scard syn-h">
+            <div class="h"><span class="pip"></span>the synergy</div>
+            <p>Three lenses point at one move:</p>
+            <div class="eq">
+              First-Principles → "the asset is the interception point"<br>
+              &nbsp;&nbsp;+ JTBD → "mask / init are the strong jobs"<br>
+              &nbsp;&nbsp;+ Analogical → "winners auto-fix or add visible value"<br>
+              ──────────────────────────<br>
+              = a local <b style="color:var(--accent)">SAFETY + CONTEXT</b> layer at prompt-submit,<br>
+              &nbsp;&nbsp;with quality-coaching demoted to opt-in commands.
+            </div>
+          </div>
+
+          <div class="scard wild-h">
+            <div class="h"><span class="pip"></span>the breakthrough wildcard</div>
+            <p><b style="color:var(--purple)">"Coach Claude, not the human."</b> Inject guidance for the model to ask the right question. This converts the existential threat — Claude getting better at handling vague prompts — into a <span class="squig" style="background-image:linear-gradient(135deg,transparent 0,transparent 30%,var(--purple) 30%,var(--purple) 50%,transparent 50%,transparent 80%,var(--purple) 80%)">tailwind</span>.</p>
+          </div>
+
+          <div class="move">
+            <div class="h">▶ recommended single highest-leverage move</div>
+            <div class="big">Reposition around <span class="hl">secret-prevention + project-context</span> as the install reason.</div>
+            <div class="demote"><span class="x">— demote</span> the warn-mode auto-gate to opt-in.</div>
+            <p style="margin:14px 0 0;font-size:13px;color:var(--fg-faint);font-family:var(--mono)">honest counterpoint logged: "niche-but-loved" may beat "popular" for a tool like this — popularity may be the wrong goal, or only reachable by repositioning off the gate.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <span class="ok">✓ session complete</span>
+    <span class="sep">│</span>
+    <span>generated from <b style="color:var(--fg-dim)">.memlog.md</b></span>
+    <span class="sep">│</span>
+    <span>2026-06-21</span>
+    <span class="sep">│</span>
+    <span>mode: ideate-for-me · 8 lenses</span>
+    <span class="sep">│</span>
+    <span>topic: why cpl isn't catching on yet</span>
+  </footer>
+
+</div>
+</body>
+</html>

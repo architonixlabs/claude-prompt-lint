@@ -4,6 +4,43 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] — 2026-06-22
+
+### Changed
+
+- **Repositioned around the privileged interception point.** The README now
+  leads with the two jobs every Claude Code repo actually feels — *never leak a
+  secret* and *keep your repo legible to Claude* — and frames prompt-quality as
+  an **offer, not a scold**. The local prompt-eval engine is unchanged (still
+  0% false-positive on the eval set); what changed is how it speaks.
+- **Gate (warn mode) now coaches the assistant instead of scolding the user.**
+  The injected note briefs Claude on what's thin and tells it to confirm the
+  missing piece in *one* question or proceed on a stated assumption — bounded so
+  it works *with* an increasingly capable agent rather than nagging. No change to
+  the pass/flag decision (eval FPR/FNR unchanged at 0%/0%). New config
+  `feedback_style` (`coach` default, or `note` for the classic user-facing
+  nudge) makes this a choice, not a forced behavior.
+- **`/cpl help` and the manifests** now lead with the repositioned one-liner.
+- **Gate (block mode) offers a fix.** The block message now points at
+  `/cpl rewrite` to tighten the prompt, alongside the existing `!!` bypass.
+
+### Added
+
+- **`/cpl init` is now refresh-aware (drift detection).** The written section
+  embeds a structural fingerprint; re-running `/cpl init` reports whether the
+  repo has *drifted* from the recorded context or is still up to date — the
+  freshness signal a one-shot generator (native `/init`) doesn't give you. The
+  fingerprint excludes language counts so cpl writing its own `CLAUDE.md` can't
+  trigger false drift.
+- **Shareable stats.** `/cpl stats` now prints a copy-pasteable hygiene line, and
+  `/cpl stats share` emits only that line — cpl's first socially shareable
+  artifact (all other value stays private to your machine). The full report also
+  shows how often warns **coached the assistant**, so the coach path is provable.
+- **Docker dev image (Linux).** `Dockerfile` + `docker-compose.yml` build a
+  zero-dependency Linux image that self-checks (test suite + gate eval, exits
+  non-zero on any false positive) and runs the dispatcher CLI. It does not run a
+  server — cpl is a plugin. Optional `ollama` compose profile for a Tier-2 demo.
+
 ## [1.5.0] — 2026-06-21
 
 ### Added

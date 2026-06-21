@@ -20,6 +20,7 @@ from typing import Any, Dict
 DEFAULTS: Dict[str, Any] = {
     "enabled": True,
     "mode": "warn",                 # "warn" | "block"
+    "feedback_style": "coach",      # "coach" (brief the assistant) | "note" (classic user note)
     "bypass_prefix": "!!",
     "min_length_skip": 40,
     "block_threshold": 50,

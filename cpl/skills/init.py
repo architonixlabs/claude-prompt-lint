@@ -11,6 +11,8 @@ Fail-safe: reports a clear message on a write error; never raises.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from pathlib import Path
 
@@ -19,6 +21,41 @@ from cpl.shared import project
 
 _START = "<!-- cpl:context:start -->"
 _END = "<!-- cpl:context:end -->"
+_FP = "<!-- cpl:fp:"   # embedded baseline fingerprint -> drift detection
+
+
+def _fingerprint(facts) -> str:
+    """Stable short hash of the repo's STRUCTURAL facts.
+
+    Embedded in the written section so a later `/cpl init` can tell whether the
+    repo has drifted from the recorded context — the freshness signal a one-shot
+    generator (like the native /init) doesn't give you.
+
+    Deliberately excludes `languages`: writing CLAUDE.md adds a Markdown file,
+    which shifts the language counts and would make every re-run look like drift
+    (a self-write feedback loop). manifests/commands/layout/git/entry_points/name
+    capture real structural change and are invariant to cpl's own write. A new
+    language almost always arrives with a new manifest or dir, so it's still
+    caught.
+    """
+    keys = ("name", "manifests", "commands", "layout", "git", "entry_points")
+    subset = {k: facts.get(k) for k in keys}
+    try:
+        canon = json.dumps(subset, sort_keys=True, default=str)
+    except Exception:
+        canon = repr(subset)
+    return hashlib.sha1(canon.encode("utf-8")).hexdigest()[:12]
+
+
+def _existing_fp(existing: str) -> str:
+    """Pull the prior fingerprint out of an existing CLAUDE.md, or '' if none."""
+    i = existing.find(_FP)
+    if i == -1:
+        return ""
+    j = existing.find("-->", i)
+    if j == -1:
+        return ""
+    return existing[i + len(_FP):j].strip()
 
 
 def _merge_section(existing: str, section: str) -> str:
@@ -38,8 +75,10 @@ def _merge_section(existing: str, section: str) -> str:
     return existing[:i] + section + existing[j + len(_END):]
 
 
-def _render(facts) -> str:
+def _render(facts, fingerprint: str = "") -> str:
+    fp = fingerprint or _fingerprint(facts)
     lines = [_START,
+             f"{_FP}{fp} -->",
              "## Project context (maintained by `cpl` — run `/cpl init` to refresh)",
              ""]
     lines.append(f"**Project:** {facts.get('name', 'project')}")
@@ -94,10 +133,12 @@ def run(ctx: Context) -> Result:
     target = root / fname
 
     facts = project.scan(root)
-    section = _render(facts)
+    fp = _fingerprint(facts)
+    section = _render(facts, fp)
 
     try:
         existing = target.read_text(encoding="utf-8") if target.is_file() else ""
+        prior_fp = _existing_fp(existing)
         merged = _merge_section(existing, section)
         _write_atomic(target, merged)
     except Exception:
@@ -105,11 +146,21 @@ def run(ctx: Context) -> Result:
                       payload=f"[cpl init] Could not write {target}. "
                               f"Check permissions and try again.")
 
+    # Freshness signal — the thing a one-shot generator can't give you.
+    if not prior_fp:
+        drift = "  Status: first run — baseline context written."
+    elif prior_fp == fp:
+        drift = "  Status: ✓ up to date — repo matches the recorded context (no drift)."
+    else:
+        drift = ("  Status: ↻ refreshed — the repo changed since the last "
+                 "`/cpl init`; baseline facts updated.")
+
     lines = ["🧭 cpl init",
              "",
              f"  Wrote project context to {fname} (cpl-managed section).",
              f"  Project: {facts.get('name', '?')} · "
              f"Stack: {', '.join(facts.get('languages') or []) or 'n/a'}",
+             drift,
              ""]
     if quick:
         lines.append("  Baseline written. Re-run `/cpl init` (no --quick) to let "

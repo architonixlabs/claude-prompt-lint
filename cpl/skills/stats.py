@@ -22,7 +22,23 @@ _TOKENS_PER_BLOCK = 350
 _TOKENS_PER_WARN = 175
 
 
+def _share_line(total: int, passed: int, flagged: int, est_tokens: int) -> str:
+    """A single copy-pasteable brag line — the one socially shareable artifact.
+
+    cpl's value is otherwise entirely private (your log never leaves the box),
+    so there's nothing to spread. This gives the user one clean line to post.
+    """
+    pass_pct = (passed / total * 100) if total else 0
+    return (
+        f"🧹 My prompt hygiene (last {total}): {pass_pct:.0f}% passed clean, "
+        f"{flagged} flagged, ~{est_tokens:,} tokens saved — checked locally, "
+        f"zero API cost. via claude-prompt-lint (/cpl)"
+    )
+
+
 def run(ctx: Context) -> Result:
+    share_only = "share" in (ctx.args or "").split()
+
     if ctx.log_path is None or not ctx.log_path.is_file():
         return Result(
             action="message",
@@ -45,14 +61,25 @@ def run(ctx: Context) -> Result:
     passed = actions.get("pass", 0)
     flagged = blocked + warned
 
+    # How often the warn note actually coached the assistant (vs. the classic
+    # user-facing "note" style) — the provable signal for the coach bet.
+    coached = sum(1 for r in records
+                  if r.get("action") == "inject" and r.get("style") == "coach")
+
     est_tokens = blocked * _TOKENS_PER_BLOCK + warned * _TOKENS_PER_WARN
+
+    if share_only:
+        return Result(
+            action="message",
+            payload=_share_line(total, passed, flagged, est_tokens),
+        )
 
     lines = [
         "📊 cpl stats",
         "",
         f"  Prompts seen      : {total}",
         f"  Passed            : {passed}",
-        f"  Flagged (warn)    : {warned}",
+        f"  Flagged (warn)    : {warned}  (coached the assistant: {coached})",
         f"  Blocked           : {blocked}",
         "",
         f"  Flag rate         : {(flagged / total * 100):.1f}%"
@@ -70,6 +97,9 @@ def run(ctx: Context) -> Result:
         "",
         "  (Heuristic — see README. Every flagged prompt counts; warns at half "
         "weight.)",
+        "",
+        "  Share this (copy the line below, or run `/cpl stats share`):",
+        f"    {_share_line(total, passed, flagged, est_tokens)}",
     ]
 
     return Result(action="message", payload="\n".join(lines))

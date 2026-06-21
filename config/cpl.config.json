@@ -1,6 +1,7 @@
 {
   "enabled": true,
   "mode": "warn",
+  "feedback_style": "coach",
   "bypass_prefix": "!!",
   "min_length_skip": 40,
   "block_threshold": 50,
