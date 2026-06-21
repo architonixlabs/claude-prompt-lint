@@ -81,7 +81,8 @@ secret would still be sent — that would be false protection.
    notes — so **no dispatcher change** is needed.
 
 4. **`cpl/shared/feedback.py`** (modify) — `format_mask_block(findings,
-   masked_prompt, bypass)` and `format_mask_warn(findings)` renderers.
+   masked_prompt)` and `format_mask_warn(findings)` renderers. (No `bypass`
+   arg — `!!` deliberately does not bypass a secret block.)
 
 ### Data flow
 
