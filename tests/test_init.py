@@ -82,6 +82,14 @@ class RunCommand(unittest.TestCase):
         res = init.run(self._ctx(d))
         self.assertIn("ENRICH", res.payload)
 
+    def test_write_error_reports_message(self):
+        d = self._cwd()
+        # Make the target a directory so write_text fails.
+        (d / "CLAUDE.md").mkdir()
+        res = init.run(self._ctx(d))
+        self.assertEqual(res.action, "message")
+        self.assertIn("Could not write", res.payload)
+
 
 if __name__ == "__main__":
     unittest.main()

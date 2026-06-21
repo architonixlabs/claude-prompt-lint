@@ -67,8 +67,15 @@ def _render(facts) -> str:
 
 def _write_atomic(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".cpltmp")
-    tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, path)
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        raise
 
 
 def run(ctx: Context) -> Result:
@@ -76,9 +83,7 @@ def run(ctx: Context) -> Result:
         return Result(action="pass")
 
     args = (ctx.args or "").strip()
-    quick = False
-    if args.split()[:1] == ["--quick"]:
-        quick = True
+    quick = "--quick" in args.split()
 
     cfg = ctx.config or {}
     init_cfg = cfg.get("init", {}) if isinstance(cfg.get("init"), dict) else {}
