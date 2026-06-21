@@ -4,6 +4,18 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] — 2026-06-21
+
+### Added
+
+- **Project context (`/cpl init`).** Scans the repo (stack, build/test commands,
+  layout, git) and writes a concise, cpl-managed section into the project-root
+  `CLAUDE.md` — which Claude Code loads natively each session, so the AI has
+  project context without re-deriving it and at zero per-turn token cost. cpl
+  fills a deterministic baseline, then enriches it; `--quick` writes baseline
+  only. Only the text between the cpl markers is touched — your `CLAUDE.md`
+  content is preserved.
+
 ## [1.4.0] — 2026-06-21
 
 ### Added

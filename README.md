@@ -142,6 +142,18 @@ machine:
   false positives. `!!` does **not** skip a secret block — use the allowlist for
   values you intend to send.
 
+### Project context (`/cpl init`)
+
+`/cpl init` writes a concise project summary (stack, build/test commands, layout,
+git) into a cpl-managed section of your project's `CLAUDE.md` — the file Claude
+Code loads natively every session, so the AI knows your project without
+re-deriving it, at **zero per-turn token cost**.
+
+- cpl fills a deterministic baseline; then it enriches the section with
+  architecture/convention notes. `/cpl init --quick` writes the baseline only.
+- It only edits between its `<!-- cpl:context:start/end -->` markers — your own
+  `CLAUDE.md` content is preserved. Re-run any time to refresh.
+
 ---
 
 ## Configuration
@@ -201,6 +213,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 | `skills` | all on | Enable/disable individual skills by name. |
 | `expand` | (object) | `default_framework`, `interactive`, `tone`, `verbosity` for `/cpl expand`. |
 | `mask` | (object) | `enabled`, `block_secrets`, `warn_pii`, `allowlist`, `custom_patterns` for data masking. |
+| `init` | (object) | `claude_md` — the file `/cpl init` writes to (default `CLAUDE.md`). |
 
 **Default mode is `warn`** — lenient on purpose. Flip to `block` once you trust
 the gate.

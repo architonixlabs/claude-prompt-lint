@@ -27,6 +27,7 @@ Run the dispatcher in command mode and relay its output to the user verbatim:
 | `/cpl stats` | Gated/passed counts + estimated tokens saved from your local log. |
 | `/cpl template <name>` | Emits a reusable prompt template (`bugfix`, `refactor`, `migration`). |
 | `/cpl mask <text>` | Returns a redacted copy of text (secrets/PII masked) to paste back. |
+| `/cpl init [--quick]` | Generate/refresh a project-context section in `CLAUDE.md` (then I enrich it, unless `--quick`). |
 | `/cpl help` | List available commands. |
 
 All eight skills are enabled by default; toggle any of them under `"skills"` in
@@ -72,3 +73,12 @@ the args. So `/cpl expand race the login bug` means framework=`race`,
 prompt=`the login bug`. If a prompt genuinely needs to start with one of those
 words, lead with an explicit framework, e.g. `/cpl expand default race
 condition in worker.py`.
+
+### `/cpl init`
+
+The dispatcher writes a deterministic factual baseline into a cpl-managed
+section of `CLAUDE.md` and prints a summary. If that output contains an `ENRICH:`
+line (i.e. the user did not pass `--quick`), read the repo and rewrite ONLY the
+text between the `<!-- cpl:context:start -->` and `<!-- cpl:context:end -->`
+markers to add a short architecture / conventions / gotchas note — concise,
+since `CLAUDE.md` loads every session. Never touch anything outside the markers.
