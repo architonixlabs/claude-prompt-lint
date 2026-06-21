@@ -97,7 +97,7 @@ def format_mask_warn(findings) -> str:
     kinds = []
     seen = set()
     for f in findings:
-        if f.severity == "warn" and f.kind not in seen:
+        if f.kind not in seen:
             seen.add(f.kind)
             kinds.append(f.label.lower())
     listed = ", ".join(kinds) if kinds else "personal data"

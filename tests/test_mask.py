@@ -49,6 +49,7 @@ class HookPath(unittest.TestCase):
         res = _hook(_SECRET, _cfg(mask={"enabled": True, "block_secrets": False,
                                         "warn_pii": True}))
         self.assertEqual(res.action, "inject")   # warn, not block
+        self.assertIn("aws", res.payload.lower())  # warn must name what was found
 
     def test_disabled_passes(self):
         res = _hook(_SECRET, _cfg(mask={"enabled": False}))
