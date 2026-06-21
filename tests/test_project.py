@@ -39,7 +39,7 @@ class Scan(unittest.TestCase):
         (d / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
         (d / "tests").mkdir()
         cmds = project.scan(d)["commands"]
-        self.assertIn("unittest", cmds.get("test", "") + cmds.get("install", ""))
+        self.assertIn("unittest", cmds.get("test", ""))
 
     def test_npm_commands_from_scripts(self):
         d = self._repo()
@@ -77,6 +77,19 @@ class Scan(unittest.TestCase):
         git = project.scan(d)["git"]
         self.assertEqual(git["branch"], "main")
         self.assertIn("github.com/o/r", git["remote"])
+        self.assertEqual(project.scan(d)["name"], "r")   # remote basename wins
+
+    def test_git_remote_strips_credentials(self):
+        d = self._repo()
+        g = d / ".git"
+        g.mkdir()
+        (g / "config").write_text(
+            '[remote "origin"]\n\turl = https://user:tok@github.com/o/r.git\n',
+            encoding="utf-8")
+        remote = project.scan(d)["git"]["remote"]
+        self.assertNotIn("tok", remote)
+        self.assertNotIn("user", remote)
+        self.assertIn("github.com/o/r", remote)
 
     def test_failsafe_on_missing_dir(self):
         # Nonexistent path -> minimal dict, no raise.

@@ -42,6 +42,8 @@ def _languages(root: Path) -> List[str]:
             lang = _LANG_BY_EXT.get(Path(fn).suffix.lower())
             if lang:
                 counts[lang] += 1
+        if seen >= _MAX_FILES:
+            break
     return [lang for lang, _ in counts.most_common(5)]
 
 
@@ -111,6 +113,7 @@ def _git(root: Path) -> Dict[str, str]:
                           cfg.read_text(encoding="utf-8"))
             if m:
                 url = m.group(1)
+                url = re.sub(r"^https?://[^@/]*@", "https://", url)
                 url = re.sub(r"^https?://", "", url)
                 url = re.sub(r"^git@([^:]+):", r"\1/", url)
                 url = re.sub(r"\.git$", "", url)
