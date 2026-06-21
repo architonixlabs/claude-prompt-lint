@@ -58,6 +58,7 @@ class Skill:
 
 # Order matters only for display; resolution is by trigger match.
 _SKILL_MODULES = [
+    "mask",
     "gate",
     "rewrite",
     "stats",
