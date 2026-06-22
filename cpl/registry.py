@@ -70,6 +70,7 @@ _SKILL_MODULES = [
     "scope",
     "template",
     "init",
+    "audit",
 ]
 
 

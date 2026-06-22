@@ -43,6 +43,7 @@
     "expand": true,
     "scope": true,
     "template": true,
-    "init": true
+    "init": true,
+    "audit": true
   }
 }

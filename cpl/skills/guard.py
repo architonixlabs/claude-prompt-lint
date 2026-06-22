@@ -177,6 +177,21 @@ def run(ctx: Context) -> Result:
                                        "by printing a secret file", "secret file")
             return Result(action="pass")
 
+        # --- Write/Edit: catch hardcoding a secret INTO a file. ---
+        if tool in ("Write", "Edit"):
+            content = tool_input.get("new_string") if tool == "Edit" \
+                else tool_input.get("content")
+            if not isinstance(content, str) or not content:
+                return Result(action="pass")
+            found = [f for f in secrets.scan(content, cfg)
+                     if f.severity == secrets.BLOCK]
+            if found:
+                fp = tool_input.get("file_path") or ""
+                where = (f"by writing it to {os.path.basename(fp)}" if fp
+                         else "by writing it to a file")
+                return _result(ctx, mode, tool.lower(), where, _kinds(found))
+            return Result(action="pass")
+
         # Any other tool slipped past the matcher -> allow.
         return Result(action="pass")
     except Exception:

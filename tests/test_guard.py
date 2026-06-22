@@ -114,6 +114,34 @@ class BashGuard(unittest.TestCase):
         self.assertEqual(res.action, "pass")
 
 
+class WriteEditGuard(unittest.TestCase):
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp())
+
+    def test_write_secret_warns(self):
+        res = guard.run(_ctx("Write",
+                             {"file_path": "config.py", "content": _CONN}, self.d))
+        self.assertEqual(res.action, "inject")
+
+    def test_edit_secret_in_new_string_warns(self):
+        res = guard.run(_ctx("Edit",
+                             {"file_path": "settings.py",
+                              "old_string": "KEY=", "new_string": _PRIVATE_KEY}, self.d))
+        self.assertEqual(res.action, "inject")
+
+    def test_write_ordinary_content_passes(self):
+        res = guard.run(_ctx("Write",
+                             {"file_path": "app.py", "content": "def f():\n  return 1"},
+                             self.d))
+        self.assertEqual(res.action, "pass")
+
+    def test_write_secret_deny_mode_blocks(self):
+        res = guard.run(_ctx("Write", {"file_path": "c.py", "content": _CONN},
+                             self.d, mode="deny"))
+        self.assertEqual(res.action, "block")
+        self.assertEqual(res.meta.get("decision"), "deny")
+
+
 class FailOpen(unittest.TestCase):
     def test_malformed_tool_input_passes(self):
         ctx = Context(prompt="", cwd=".", config={"guard": {"mode": "deny"}},

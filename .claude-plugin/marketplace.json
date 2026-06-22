@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Architonix Labs plugins for Claude Code.",
-    "version": "1.7.1"
+    "version": "1.8.0"
   },
   "plugins": [
     {
       "name": "claude-prompt-lint",
       "source": "./",
       "description": "The last thing that runs on your machine before a prompt leaves it. Local-first for Claude Code: catch secrets pre-send, keep your repo legible to Claude (refresh-aware /cpl init), and tighten weak prompts as an offer, not a scold - zero API tokens spent on the check.",
-      "version": "1.7.1",
+      "version": "1.8.0",
       "author": {
         "name": "Ram Chandra Samal",
         "email": "rcsamal@gmail.com",
