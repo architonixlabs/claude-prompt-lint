@@ -91,8 +91,26 @@ class BashGuard(unittest.TestCase):
         res = guard.run(_ctx("Bash", {"command": "cat .env | grep KEY"}, self.d))
         self.assertEqual(res.action, "inject")
 
+    def test_grep_of_env_file_warns(self):
+        res = guard.run(_ctx("Bash", {"command": "grep SECRET .env"}, self.d))
+        self.assertEqual(res.action, "inject")
+
+    def test_bare_env_dump_warns(self):
+        for cmd in ("env", "printenv", "env | sort"):
+            res = guard.run(_ctx("Bash", {"command": cmd}, self.d))
+            self.assertEqual(res.action, "inject", cmd)
+
+    def test_env_as_command_prefix_passes(self):
+        # `env VAR=1 cmd` runs a command in a modified env — not a dump.
+        res = guard.run(_ctx("Bash", {"command": "env NODE_ENV=test npm test"}, self.d))
+        self.assertEqual(res.action, "pass")
+
     def test_ordinary_command_passes(self):
         res = guard.run(_ctx("Bash", {"command": "ls -la && git status"}, self.d))
+        self.assertEqual(res.action, "pass")
+
+    def test_grep_of_ordinary_file_passes(self):
+        res = guard.run(_ctx("Bash", {"command": "grep TODO src/app.py"}, self.d))
         self.assertEqual(res.action, "pass")
 
 
