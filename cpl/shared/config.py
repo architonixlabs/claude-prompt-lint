@@ -31,6 +31,13 @@ DEFAULTS: Dict[str, Any] = {
     "fail_open": True,
     "log_path": "~/.cpl/prompts.log.jsonl",
     "debug_log": False,
+    # PreToolUse secret-in-context guard. Lenient default ("warn"): surface a
+    # note but let the tool proceed. "ask" forces a permission prompt, "deny"
+    # blocks, "off" disables. Stateless + fail-open; reuses the mask detectors.
+    "guard": {
+        "mode": "warn",            # warn | ask | deny | off
+        "max_scan_bytes": 200000,
+    },
     "skills": {
         "gate": True,
         "rewrite": True,

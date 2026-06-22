@@ -45,7 +45,9 @@ def run(ctx: Context) -> Result:
             payload="[cpl stats] No prompt log yet. The gate writes one as you work.",
         )
 
-    records = [r for r in log.tail(ctx.log_path) if r.get("event") == "gate"]
+    all_records = list(log.tail(ctx.log_path))
+    records = [r for r in all_records if r.get("event") == "gate"]
+    guard_records = [r for r in all_records if r.get("event") == "guard"]
     if not records:
         return Result(
             action="message",
@@ -89,6 +91,16 @@ def run(ctx: Context) -> Result:
     ]
     for tier, n in tiers.most_common():
         lines.append(f"    {tier:<18}: {n}")
+
+    if guard_records:
+        gacts = Counter(r.get("action", "") for r in guard_records)
+        lines += [
+            "",
+            "  Secret guard (PreToolUse):",
+            f"    reads/cmds checked : {len(guard_records)}",
+            f"    warn/ask/deny      : {gacts.get('warn', 0)}/"
+            f"{gacts.get('ask', 0)}/{gacts.get('deny', 0)}",
+        ]
 
     lines += [
         "",
