@@ -39,7 +39,11 @@ _DEFAULT_GLOBS = [
 ]
 _DEFAULT_MAX_BYTES = 200_000
 # Bash verbs that would surface a file's contents into the conversation.
-_READ_VERBS = ("cat", "head", "tail", "less", "more", "bat", "type", "xxd", "od", "strings")
+_READ_VERBS = ("cat", "head", "tail", "less", "more", "bat", "type", "xxd",
+               "od", "strings", "grep", "egrep", "rg", "ag", "awk", "sed",
+               "cut", "sort", "uniq", "nl", "tac", "base64", "tee")
+# Verbs that dump the whole environment (often full of secrets) to stdout.
+_ENV_DUMP_VERBS = ("env", "printenv")
 
 
 def _guard_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -157,10 +161,16 @@ def run(ctx: Context) -> Result:
             inline = [f for f in secrets.scan(command, cfg) if f.severity == secrets.BLOCK]
             if inline:
                 return _result(ctx, mode, "command", "in the command", _kinds(inline))
-            # (b) a read verb pointed at a sensitive-looking file
-            toks = command.replace("|", " ").replace(";", " ").split()
-            verbs = {t.lower() for t in toks[:1]} | {t.lower() for t in toks}
-            if verbs & set(_READ_VERBS):
+            toks = command.replace("|", " ").replace(";", " ").replace("&", " ").split()
+            lowered = [t.lower() for t in toks]
+            # (b) a bare env dump (`env` / `printenv` with no `VAR=...` prefix,
+            #     which would instead be running a command in a modified env).
+            if lowered and lowered[0] in _ENV_DUMP_VERBS \
+                    and not any("=" in t for t in toks[1:]):
+                return _result(ctx, mode, "command",
+                               "by dumping environment variables", "env vars")
+            # (c) a read verb pointed at a sensitive-looking file
+            if set(lowered) & set(_READ_VERBS):
                 for t in toks[1:]:
                     if _name_is_sensitive(t, globs):
                         return _result(ctx, mode, "command",

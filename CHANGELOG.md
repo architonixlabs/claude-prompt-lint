@@ -4,6 +4,17 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.1] — 2026-06-22
+
+### Changed
+
+- **Secret guard: harden Bash coverage.** Beyond `cat .env`, the guard now flags
+  bare environment dumps (`env` / `printenv` with no `VAR=` prefix — they spill
+  every secret in the environment to stdout, i.e. into context) and more
+  read verbs pointed at a sensitive file (`grep`, `awk`, `sed`, `base64`, `tee`,
+  …). `env VAR=x cmd` (running a command in a modified env) is correctly *not*
+  flagged, keeping false positives low. 4 new tests; eval still 0%/0%.
+
 ## [1.7.0] — 2026-06-22
 
 ### Added
