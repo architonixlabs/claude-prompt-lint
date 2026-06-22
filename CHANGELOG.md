@@ -4,6 +4,19 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] — 2026-06-22
+
+### Added
+
+- **`/cpl audit [N]`** — a local, metadata-only readout of every secret cpl
+  caught at the boundary (prompt `mask` + PreToolUse `guard`): totals, by source,
+  top detector kinds, and the most recent N with timestamps. Never stores or
+  shows a secret value or file path — kinds only. Makes the security claim
+  *inspectable* without becoming a secret database.
+- **Guard now covers `Write`/`Edit`** — catches the model hardcoding a secret
+  *into* a file (scans `content` / `new_string`, acts only on a real secret).
+  Matcher widened to `Read|Bash|Write|Edit`.
+
 ## [1.7.1] — 2026-06-22
 
 ### Changed

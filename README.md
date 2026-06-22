@@ -129,6 +129,7 @@ Just type. Weak prompts get flagged. To bypass on purpose, prefix with `!!`:
 | `/cpl scope <prompt>` | Checks that referenced files/symbols actually exist in the repo. |
 | `/cpl profile` | Your recurring prompt weaknesses over time (from your local log). |
 | `/cpl stats` | Gated/passed counts + estimated tokens saved (from your local log). |
+| `/cpl audit [N]` | Metadata-only readout of every secret cpl caught at the boundary (mask + guard). No values, ever. |
 | `/cpl template <name>` | Emits a reusable prompt template (`bugfix`, `refactor`, `migration`). |
 | `/cpl help` | List available commands. |
 
@@ -167,7 +168,9 @@ machine:
 The prompt mask only sees what you *type*. But an agent often reads a
 secret-bearing file into context on its own — `.env`, `*.pem`, `id_rsa` — a read
 the prompt mask never sees. The **guard** runs on Claude Code's `PreToolUse`
-hook, the instant before a `Read` or `Bash` runs:
+hook, the instant before a `Read`, `Bash`, `Write`, or `Edit` runs (it also
+catches a bare `env`/`printenv` dump, a `grep`/`cat` of a secret file, and the
+model hardcoding a secret *into* a file):
 
 - It checks only files whose **name looks sensitive** (cheap; ordinary source
   reads are never scanned), then **transiently** scans the content with the same
