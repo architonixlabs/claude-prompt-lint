@@ -28,8 +28,13 @@
   "init": {
     "claude_md": "CLAUDE.md"
   },
+  "guard": {
+    "mode": "warn",
+    "max_scan_bytes": 200000
+  },
   "skills": {
     "mask": true,
+    "guard": true,
     "gate": true,
     "rewrite": true,
     "stats": true,

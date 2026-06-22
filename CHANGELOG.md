@@ -4,6 +4,25 @@ All notable changes to **claude-prompt-lint** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/) and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] — 2026-06-22
+
+### Added
+
+- **Secret guard on `PreToolUse`.** The prompt mask only sees what you type;
+  this guards the bigger agentic leak vector — the assistant reading a
+  secret-bearing file (`.env`, `*.pem`, `id_rsa`) or `cat`-ing one into context
+  on its own. A `PreToolUse` hook (matcher `Read|Bash`) checks only
+  sensitive-looking targets (cheap filename gate), transiently scans with the
+  same detectors as the mask, and acts only when a real secret is found.
+  - **Stateless** — scans, decides, discards; never indexes where secrets live.
+  - **Fail-open & lenient** — any error lets the tool proceed; default mode is
+    `warn` (non-blocking note). `ask` forces a permission prompt, `deny` blocks,
+    `off` disables. Config: `"guard": {"mode", "max_scan_bytes", "sensitive_globs"}`.
+  - `/cpl stats` now also reports guard activity (reads/cmds checked, warn/ask/deny).
+  - Honest scope: guards the assistant's `Read`/`Bash`, not the OS; regex-bound;
+    not a replacement for network DLP. Verify the decision contract after a
+    Claude Code upgrade (see README).
+
 ## [1.6.0] — 2026-06-22
 
 ### Changed

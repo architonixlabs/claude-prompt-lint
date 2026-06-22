@@ -162,6 +162,31 @@ machine:
   false positives. `!!` does **not** skip a secret block — use the allowlist for
   values you intend to send.
 
+### Secret guard (before tool reads)
+
+The prompt mask only sees what you *type*. But an agent often reads a
+secret-bearing file into context on its own — `.env`, `*.pem`, `id_rsa` — a read
+the prompt mask never sees. The **guard** runs on Claude Code's `PreToolUse`
+hook, the instant before a `Read` or `Bash` runs:
+
+- It checks only files whose **name looks sensitive** (cheap; ordinary source
+  reads are never scanned), then **transiently** scans the content with the same
+  detectors as the mask, and acts **only when a real secret is found** — so
+  false positives stay low.
+- **Stateless by design:** it scans, decides, and discards. It never records
+  *where* your secrets live (that index would be the very thing you're guarding
+  against).
+- **Fail-open & lenient:** any error lets the tool proceed, and the default mode
+  is `warn` (a non-blocking note). Set `"guard": {"mode": "ask"}` to require a
+  confirmation prompt, `"deny"` to block, or `"off"` to disable.
+- It catches the common, high-value vector — an agent about to read `.env` or
+  `cat` a key — **not** every exfiltration path. It guards the assistant's read,
+  not the OS; for org-wide control you still want network DLP.
+
+> ⚠️ The `PreToolUse` decision contract can shift across Claude Code versions.
+> After a Claude Code upgrade, confirm the guard still fires (e.g. ask Claude to
+> read a throwaway `.env` containing a fake key and check for the note/prompt).
+
 ### Project context (`/cpl init`)
 
 `/cpl init` writes a concise project summary (stack, build/test commands, layout,
@@ -236,6 +261,7 @@ Resolution order (later wins): built-in defaults → the plugin's bundled
 | `skills` | all on | Enable/disable individual skills by name. |
 | `expand` | (object) | `default_framework`, `interactive`, `tone`, `verbosity` for `/cpl expand`. |
 | `mask` | (object) | `enabled`, `block_secrets`, `warn_pii`, `allowlist`, `custom_patterns` for data masking. |
+| `guard` | (object) | The PreToolUse secret guard: `mode` (`warn`/`ask`/`deny`/`off`), `max_scan_bytes`, optional `sensitive_globs`. |
 | `init` | (object) | `claude_md` — the file `/cpl init` writes to (default `CLAUDE.md`). |
 
 **Default mode is `warn`** — lenient on purpose. Flip to `block` once you trust

@@ -109,6 +109,28 @@ def _emit_message(text: str) -> int:
     return _write(text)
 
 
+def _emit_pre_tool_decision(decision: str, reason: str) -> int:
+    # PreToolUse interrupt: "deny" blocks the tool, "ask" forces a permission
+    # prompt. The reason is shown to Claude / the user.
+    return _write(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": decision,
+            "permissionDecisionReason": reason,
+        }
+    }))
+
+
+def _emit_pre_tool_context(text: str) -> int:
+    # PreToolUse non-blocking warning: surface context, let the tool proceed.
+    return _write(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": text,
+        }
+    }))
+
+
 def handle_hook(event: str, cfg) -> int:
     from cpl.registry import Context, Registry
 
@@ -160,6 +182,44 @@ def handle_hook(event: str, cfg) -> int:
 
     if inject_chunks:
         return _emit_inject("\n".join(inject_chunks))
+    return _emit_pass()
+
+
+def handle_pre_tool(event: str, cfg) -> int:
+    """PreToolUse: guard tool calls (e.g. reading a secret file) before they run.
+
+    Distinct from handle_hook: the input is a tool payload (tool_name/tool_input)
+    and the output contract is the permissionDecision JSON, not block/inject.
+    Fail-open: empty stdout (exit 0) lets the tool proceed.
+    """
+    from cpl.registry import Context, Registry
+
+    payload = _read_stdin_json()
+    cwd = payload.get("cwd") or os.getcwd()
+    _debug(cfg, f"[pretool] tool={payload.get('tool_name')} "
+                f"keys={sorted(payload.keys())}")
+
+    skills = Registry(cfg).for_hook(event)
+    if not skills:
+        return _emit_pass()
+
+    log_path = config_mod.resolve_log_path(cfg)
+    ctx = Context(prompt="", cwd=cwd, config=cfg, log_path=log_path,
+                  event=event, payload=payload)
+
+    for skill in skills:
+        try:
+            result = skill.run(ctx)
+        except Exception as exc:
+            _debug(cfg, f"[pretool] skill {skill.name} error: {exc}\n"
+                        f"{traceback.format_exc()}")
+            continue  # fail-open per skill
+        if result.action == "block":
+            decision = result.meta.get("decision") or "ask"
+            return _emit_pre_tool_decision(decision, result.payload)
+        if result.action == "inject" and result.payload:
+            return _emit_pre_tool_context(result.payload)
+        # "pass" -> let the next skill speak / allow.
     return _emit_pass()
 
 
@@ -260,6 +320,8 @@ def main(argv=None) -> int:
 
     try:
         if ns.event:
+            if ns.event == "PreToolUse":
+                return handle_pre_tool(ns.event, cfg)
             return handle_hook(ns.event, cfg)
         if ns.command is not None:
             # Take args from raw argv so skill flags (e.g. --quick) survive.

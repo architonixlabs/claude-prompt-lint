@@ -33,7 +33,8 @@ class Context:
     cwd: str = ""                     # repo / working dir
     config: Dict[str, Any] = field(default_factory=dict)
     log_path: Optional[Path] = None
-    event: str = ""                   # "UserPromptSubmit" or "command"
+    event: str = ""                   # "UserPromptSubmit" | "PreToolUse" | "command"
+    payload: Dict[str, Any] = field(default_factory=dict)  # raw hook JSON (e.g. PreToolUse tool_name/tool_input)
 
 
 @dataclass
@@ -59,6 +60,7 @@ class Skill:
 # Order matters: for hooks, the first skill to block wins; inject messages accumulate.
 _SKILL_MODULES = [
     "mask",
+    "guard",
     "gate",
     "rewrite",
     "stats",
